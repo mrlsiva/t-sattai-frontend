@@ -162,13 +162,26 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       if (isAuthenticated) {
         dispatch({ type: 'SET_LOADING', payload: true });
-        const response = await cartApi.addToCart(product.id, quantity);
         
-        if (response.success) {
-          // Reload cart to get the latest data from server
-          await loadCart();
-        } else {
-          throw new Error(response.message);
+        try {
+          const response = await cartApi.addToCart(product.id, quantity);
+          
+          if (response.success) {
+            // Reload cart to get the latest data from server
+            await loadCart();
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (apiError: any) {
+          // If API call fails, add locally
+          console.warn('API add failed, adding locally:', apiError);
+          const newItem: CartItem = {
+            id: `${product.id}_${variant?.id || 'default'}_${Date.now()}`,
+            product,
+            quantity,
+            selectedVariant: variant,
+          };
+          dispatch({ type: 'ADD_ITEM', payload: newItem });
         }
       } else {
         // For guest users, create a local cart item
@@ -182,8 +195,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw new Error(errorMessage);
+      console.error('Add to cart error:', errorMessage);
+      
+      // Still add locally as fallback
+      const newItem: CartItem = {
+        id: `${product.id}_${variant?.id || 'default'}_${Date.now()}`,
+        product,
+        quantity,
+        selectedVariant: variant,
+      };
+      dispatch({ type: 'ADD_ITEM', payload: newItem });
     }
   };
 
@@ -191,20 +212,28 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       if (isAuthenticated) {
         dispatch({ type: 'SET_LOADING', payload: true });
-        const response = await cartApi.removeFromCart(Number(itemId));
         
-        if (response.success) {
+        try {
+          const response = await cartApi.removeFromCart(Number(itemId));
+          
+          if (response.success) {
+            dispatch({ type: 'REMOVE_ITEM', payload: String(itemId) });
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (apiError: any) {
+          // If API call fails, just remove locally
+          console.warn('API remove failed, removing locally:', apiError);
           dispatch({ type: 'REMOVE_ITEM', payload: String(itemId) });
-        } else {
-          throw new Error(response.message);
         }
       } else {
         dispatch({ type: 'REMOVE_ITEM', payload: String(itemId) });
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw new Error(errorMessage);
+      console.error('Remove item error:', errorMessage);
+      // Still remove locally even if API fails
+      dispatch({ type: 'REMOVE_ITEM', payload: String(itemId) });
     }
   };
 
@@ -217,20 +246,28 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       if (isAuthenticated) {
         dispatch({ type: 'SET_LOADING', payload: true });
-        const response = await cartApi.updateCartItem(Number(itemId), quantity);
         
-        if (response.success) {
+        try {
+          const response = await cartApi.updateCartItem(Number(itemId), quantity);
+          
+          if (response.success) {
+            dispatch({ type: 'UPDATE_ITEM', payload: { id: String(itemId), quantity } });
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (apiError: any) {
+          // If API call fails, update locally
+          console.warn('API update failed, updating locally:', apiError);
           dispatch({ type: 'UPDATE_ITEM', payload: { id: String(itemId), quantity } });
-        } else {
-          throw new Error(response.message);
         }
       } else {
         dispatch({ type: 'UPDATE_ITEM', payload: { id: String(itemId), quantity } });
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw new Error(errorMessage);
+      console.error('Update quantity error:', errorMessage);
+      // Still update locally even if API fails
+      dispatch({ type: 'UPDATE_ITEM', payload: { id: String(itemId), quantity } });
     }
   };
 
@@ -238,12 +275,19 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       if (isAuthenticated) {
         dispatch({ type: 'SET_LOADING', payload: true });
-        const response = await cartApi.clearCart();
         
-        if (response.success) {
+        try {
+          const response = await cartApi.clearCart();
+          
+          if (response.success) {
+            dispatch({ type: 'CLEAR_CART' });
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (apiError: any) {
+          // If API call fails, clear locally
+          console.warn('API clear failed, clearing locally:', apiError);
           dispatch({ type: 'CLEAR_CART' });
-        } else {
-          throw new Error(response.message);
         }
       } else {
         dispatch({ type: 'CLEAR_CART' });
@@ -251,8 +295,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw new Error(errorMessage);
+      console.error('Clear cart error:', errorMessage);
+      // Still clear locally even if API fails
+      dispatch({ type: 'CLEAR_CART' });
+      localStorage.removeItem('guest_cart');
     }
   };
 

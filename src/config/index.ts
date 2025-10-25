@@ -16,9 +16,23 @@ export const config = {
 
     // App Configuration
     app: {
-        name: 'E-Commerce Frontend',
+        name: 'Vembar Karupatti',
+        tagline: 'Pure Sweetness from Nature',
         version: '1.0.0',
         environment: process.env.NODE_ENV || 'development',
+    },
+
+    // Brand Configuration
+    brand: {
+        name: 'VEMBAR KARUPATTI',
+        tagline: 'Pure Sweetness from Nature',
+        colors: {
+            primary: '#8B4513',     // Brown (like jaggery)
+            secondary: '#D2B48C',   // Light brown/tan
+            accent: '#228B22',      // Forest green (palm tree)
+            gold: '#DAA520',        // Golden yellow (like the logo background)
+        },
+        description: 'Premium traditional jaggery and natural sweeteners from South India',
     },
 
     // Feature Flags
@@ -39,14 +53,5 @@ export const config = {
         categoryPlaceholderBase: 'https://via.placeholder.com/200x200/4F46E5/FFFFFF?text=',
     },
 };
-
-// Log configuration in development
-if (config.app.environment === 'development') {
-    console.log('🔧 App Configuration:', {
-        'API Base URL': config.api.baseURL,
-        'Environment': config.app.environment,
-        'Debug Mode': config.features.enableDebugMode,
-    });
-}
 
 export default config;

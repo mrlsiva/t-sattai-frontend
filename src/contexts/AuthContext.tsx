@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (token) {
       loadUser();
     } else {
-      dispatch({ type: 'LOGIN_ERROR', payload: '' });
+      dispatch({ type: 'LOGOUT' });
     }
   }, []);
 
@@ -99,27 +99,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         dispatch({ type: 'LOGIN_SUCCESS', payload: response.data });
       } else {
         localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('mock_user_data');
         dispatch({ type: 'LOGIN_ERROR', payload: 'Failed to load user profile' });
       }
     } catch (error) {
       localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('mock_user_data');
       dispatch({ type: 'LOGIN_ERROR', payload: '' });
     }
   };
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      console.log('🔍 AuthContext: Starting login...');
       dispatch({ type: 'LOGIN_START' });
       
       const response = await authApi.login({ email, password });
+      console.log('🔍 AuthContext: Login response:', response);
       
       if (response.success && response.data) {
         localStorage.setItem('auth_token', response.data.token);
+        console.log('✅ AuthContext: Login successful, user:', response.data.user);
         dispatch({ type: 'LOGIN_SUCCESS', payload: response.data.user });
       } else {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error) {
+      console.error('❌ AuthContext: Login error:', error);
       const errorMessage = handleApiError(error);
       dispatch({ type: 'LOGIN_ERROR', payload: errorMessage });
       throw new Error(errorMessage);

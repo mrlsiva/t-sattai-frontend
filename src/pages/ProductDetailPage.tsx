@@ -39,7 +39,7 @@ const ProductDetailPage: React.FC = () => {
       setLoading(true);
       setError(null);
       console.log('Fetching product with ID:', productId);
-      const response = await productsApi.getProduct(productId!);
+      const response = await productsApi.getById(parseInt(productId!));
       console.log('Product API response:', response);
       
       if (response.success && response.data) {
@@ -73,7 +73,7 @@ const ProductDetailPage: React.FC = () => {
   const fetchRelatedProducts = async () => {
     try {
       // For now, we'll use a simple approach since we don't have the getRelatedProducts API
-      const response = await productsApi.getProducts();
+      const response = await productsApi.getAll();
       console.log('Related products API response:', response);
       
       if (response.success && response.data) {

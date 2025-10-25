@@ -24,56 +24,43 @@ const HomePage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log('HomePage: Loading data...');
       
       // Load categories first
       try {
-        const categoriesResponse = await categoriesApi.getCategories();
-        console.log('HomePage: Categories response:', categoriesResponse);
+        const categoriesResponse = await categoriesApi.getAll();
         if (categoriesResponse.success) {
           setCategories(categoriesResponse.data || []);
         }
       } catch (categoriesError) {
-        console.error('HomePage: Categories error:', categoriesError);
+        // Categories failed but continue loading products
       }
       
       // Load featured products with better error handling
       try {
-        console.log('HomePage: Fetching featured products...');
-        const productsResponse = await productsApi.getFeaturedProducts();
-        console.log('HomePage: Featured products response:', productsResponse);
+        const productsResponse = await productsApi.getFeatured();
         
         if (productsResponse.success && productsResponse.data) {
-          console.log('HomePage: Successfully loaded featured products:', productsResponse.data.length);
           setFeaturedProducts(Array.isArray(productsResponse.data) ? productsResponse.data : []);
         } else {
-          console.log('HomePage: Featured products API failed, trying direct API call...');
-          
           // Fallback to direct API call
           try {
             const directResponse = await fetch(`${config.api.baseURL}/products/featured`);
             const directData = await directResponse.json();
-            console.log('HomePage: Direct API response:', directData);
             
             if (directData.success && directData.data) {
-              console.log('HomePage: Successfully loaded from direct API:', directData.data.length);
               setFeaturedProducts(Array.isArray(directData.data) ? directData.data : []);
             } else {
-              console.log('HomePage: No featured products found, setting empty array');
               setFeaturedProducts([]);
             }
           } catch (directError) {
-            console.error('HomePage: Direct API call also failed:', directError);
             setFeaturedProducts([]);
           }
         }
       } catch (productsError) {
-        console.error('HomePage: Products API error:', productsError);
         setError('Failed to load featured products');
         setFeaturedProducts([]);
       }
     } catch (error) {
-      console.error('HomePage: General error:', error);
       setError(handleApiError(error));
     } finally {
       setLoading(false);
@@ -115,36 +102,37 @@ const HomePage: React.FC = () => {
             className="d-flex align-items-center justify-content-center"
             style={{ 
               height: '500px', 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, var(--brand-brown) 0%, var(--brand-gold) 100%)',
               color: 'white'
             }}
           >
             <Container>
               <Row className="align-items-center">
                 <Col lg={6}>
-                  <h1 className="display-4 fw-bold mb-4">Welcome to EcomStore</h1>
-                  <p className="lead mb-4">
-                    Discover amazing products at unbeatable prices. Shop with confidence 
-                    and enjoy fast, secure delivery right to your doorstep.
+                  <h1 className="display-4 fw-bold mb-4">🌴 VEMBAR KARUPATTI</h1>
+                  <p className="lead mb-4 text-brand-cream">
+                    Experience the pure sweetness from nature with our authentic Karupatti jaggery. 
+                    Traditional South Indian craftsmanship bringing you the finest quality natural sweeteners.
                   </p>
                   <Button 
                     size="lg" 
                     variant="light" 
-                    className="me-3"
+                    className="me-3 btn-brand"
                     onClick={() => navigate('/products')}
                   >
-                    Shop Now
+                    Shop Karupatti
                   </Button>
                   <Button 
                     size="lg" 
                     variant="outline-light"
                     onClick={() => navigate('/about')}
                   >
-                    Learn More
+                    Our Story
                   </Button>
                 </Col>
                 <Col lg={6} className="text-center">
-                  <i className="bi bi-bag-check" style={{ fontSize: '8rem', opacity: '0.8' }}></i>
+                  <div style={{ fontSize: '8rem', opacity: '0.8' }}>🌴</div>
+                  <div className="mt-3" style={{ fontSize: '2rem', opacity: '0.7' }}>Pure • Natural • Traditional</div>
                 </Col>
               </Row>
             </Container>
@@ -156,28 +144,30 @@ const HomePage: React.FC = () => {
             className="d-flex align-items-center justify-content-center"
             style={{ 
               height: '500px', 
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              background: 'linear-gradient(135deg, var(--brand-green) 0%, var(--brand-brown) 100%)',
               color: 'white'
             }}
           >
             <Container>
               <Row className="align-items-center">
                 <Col lg={6}>
-                  <h1 className="display-4 fw-bold mb-4">Free Shipping</h1>
+                  <h1 className="display-4 fw-bold mb-4">🚚 Free Delivery</h1>
                   <p className="lead mb-4">
-                    Enjoy free shipping on all orders above $50. Fast and reliable 
-                    delivery service to ensure your products reach you quickly.
+                    Fresh Karupatti delivered to your doorstep with care. We ensure 
+                    premium quality packaging to preserve the natural goodness.
                   </p>
                   <Button 
                     size="lg" 
                     variant="light"
+                    className="btn-brand"
                     onClick={() => navigate('/products')}
                   >
-                    Start Shopping
+                    Order Fresh Karupatti
                   </Button>
                 </Col>
                 <Col lg={6} className="text-center">
-                  <i className="bi bi-truck" style={{ fontSize: '8rem', opacity: '0.8' }}></i>
+                  <div style={{ fontSize: '8rem', opacity: '0.8' }}>🏺</div>
+                  <div className="mt-3" style={{ fontSize: '1.5rem', opacity: '0.7' }}>Handcrafted • Fresh • Delivered</div>
                 </Col>
               </Row>
             </Container>
@@ -189,28 +179,30 @@ const HomePage: React.FC = () => {
             className="d-flex align-items-center justify-content-center"
             style={{ 
               height: '500px', 
-              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              background: 'linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-green) 100%)',
               color: 'white'
             }}
           >
             <Container>
               <Row className="align-items-center">
                 <Col lg={6}>
-                  <h1 className="display-4 fw-bold mb-4">Secure Payments</h1>
+                  <h1 className="display-4 fw-bold mb-4">🔒 Pure & Authentic</h1>
                   <p className="lead mb-4">
-                    Shop with confidence using our secure payment system. We support 
-                    multiple payment methods including cards, UPI, and digital wallets.
+                    Trust in our traditional methods and authentic recipes passed down through generations. 
+                    Every batch is made with pure coconut palm sap - no additives, just nature's sweetness.
                   </p>
                   <Button 
                     size="lg" 
                     variant="light"
+                    className="btn-brand"
                     onClick={() => navigate('/products')}
                   >
-                    Explore Products
+                    Discover Purity
                   </Button>
                 </Col>
                 <Col lg={6} className="text-center">
-                  <i className="bi bi-shield-check" style={{ fontSize: '8rem', opacity: '0.8' }}></i>
+                  <div style={{ fontSize: '8rem', opacity: '0.8' }}>🌴</div>
+                  <div className="mt-3" style={{ fontSize: '1.5rem', opacity: '0.7' }}>Traditional • Authentic • Pure</div>
                 </Col>
               </Row>
             </Container>
@@ -224,8 +216,8 @@ const HomePage: React.FC = () => {
           <section className="mb-5">
             <Row className="mb-4">
               <Col>
-                <h2 className="text-center fw-bold">Shop by Category</h2>
-                <p className="text-center text-muted">Browse our wide range of product categories</p>
+                <h2 className="text-center fw-bold text-brand-brown">🌴 Product Categories</h2>
+                <p className="text-center text-muted">Explore our range of traditional South Indian specialties</p>
               </Col>
             </Row>
             <Row>
@@ -257,26 +249,20 @@ const HomePage: React.FC = () => {
         <section className="mb-5">
           <Row className="mb-4">
             <Col>
-              <h2 className="text-center fw-bold">Featured Products</h2>
-              <p className="text-center text-muted">Discover our most popular and trending items</p>
-              {/* Debug info */}
-              <div className="text-center">
-                <small className="text-muted">
-                  Debug: Found {featuredProducts.length} featured products
-                  {error && ` | Error: ${error}`}
-                </small>
-              </div>
+              <h2 className="text-center fw-bold text-brand-brown">🏺 Premium Karupatti Collection</h2>
+              <p className="text-center text-muted">Handcrafted traditional jaggery made from pure coconut palm sap</p>
             </Col>
           </Row>
           
           {featuredProducts.length === 0 && !loading ? (
             <Row>
               <Col className="text-center py-5">
-                <i className="bi bi-box-seam fs-1 text-muted d-block mb-3"></i>
-                <h4 className="text-muted">No featured products available</h4>
-                <p className="text-muted">Check back later for featured items</p>
+                <div style={{ fontSize: '4rem' }} className="text-brand-gold mb-3">🌴</div>
+                <h4 className="text-brand-brown">No Karupatti products available</h4>
+                <p className="text-muted">Our traditional jaggery collection is being prepared</p>
                 <Button 
                   variant="primary" 
+                  className="btn-brand"
                   onClick={() => navigate('/products')}
                 >
                   Browse All Products
@@ -396,34 +382,34 @@ const HomePage: React.FC = () => {
             <Row>
               <Col lg={3} md={6} className="mb-4 text-center">
                 <div className="mb-3">
-                  <i className="bi bi-truck text-primary" style={{ fontSize: '3rem' }}></i>
+                  <div style={{ fontSize: '3rem' }} className="text-brand-brown">🚚</div>
                 </div>
-                <h5 className="fw-bold">Free Shipping</h5>
-                <p className="text-muted small">Free shipping on orders over $50</p>
+                <h5 className="fw-bold text-brand-brown">Fresh Delivery</h5>
+                <p className="text-muted small">Direct from our traditional kitchen to your home</p>
               </Col>
               
               <Col lg={3} md={6} className="mb-4 text-center">
                 <div className="mb-3">
-                  <i className="bi bi-arrow-clockwise text-primary" style={{ fontSize: '3rem' }}></i>
+                  <div style={{ fontSize: '3rem' }} className="text-brand-green">🌿</div>
                 </div>
-                <h5 className="fw-bold">Easy Returns</h5>
-                <p className="text-muted small">30-day return policy</p>
+                <h5 className="fw-bold text-brand-brown">100% Natural</h5>
+                <p className="text-muted small">No chemicals, preservatives or artificial additives</p>
               </Col>
               
               <Col lg={3} md={6} className="mb-4 text-center">
                 <div className="mb-3">
-                  <i className="bi bi-shield-check text-primary" style={{ fontSize: '3rem' }}></i>
+                  <div style={{ fontSize: '3rem' }} className="text-brand-gold">🏺</div>
                 </div>
-                <h5 className="fw-bold">Secure Payment</h5>
-                <p className="text-muted small">100% secure payment processing</p>
+                <h5 className="fw-bold text-brand-brown">Traditional Method</h5>
+                <p className="text-muted small">Time-honored techniques passed down generations</p>
               </Col>
               
               <Col lg={3} md={6} className="mb-4 text-center">
                 <div className="mb-3">
-                  <i className="bi bi-headset text-primary" style={{ fontSize: '3rem' }}></i>
+                  <div style={{ fontSize: '3rem' }} className="text-brand-brown">🌴</div>
                 </div>
-                <h5 className="fw-bold">24/7 Support</h5>
-                <p className="text-muted small">Round-the-clock customer support</p>
+                <h5 className="fw-bold text-brand-brown">Pure Coconut Palm</h5>
+                <p className="text-muted small">Made exclusively from fresh coconut palm sap</p>
               </Col>
             </Row>
           </Container>

@@ -1,80 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    remember: false,
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { login, loading, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // If user is admin, redirect to admin dashboard
+      if (user.is_admin) {
+        navigate('/admin');
+      } else {
+        // Regular user goes to home page
+        navigate('/');
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setError('');
 
     try {
       await login(formData.email, formData.password);
-      
-      // Simple timeout to allow auth context to update
-      setTimeout(async () => {
-        try {
-          // Get fresh user profile to check admin status
-          const { authApi } = await import('../services/api');
-          const response = await authApi.getProfile();
-          
-          if (response.success && response.data) {
-            if (response.data.is_admin) {
-              navigate('/admin', { replace: true });
-            } else {
-              navigate(from, { replace: true });
-            }
-          } else {
-            navigate(from, { replace: true });
-          }
-        } catch (profileError) {
-          console.error('Error getting profile after login:', profileError);
-          navigate(from, { replace: true });
-        }
-      }, 100);
     } catch (error: any) {
       setError(error.message || 'Login failed');
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <Container className="py-5">
+    <Container className="mt-5">
       <Row className="justify-content-center">
-        <Col md={6} lg={5}>
-          <Card className="shadow">
-            <Card.Body className="p-5">
+        <Col md={6} lg={4}>
+          <Card>
+            <Card.Body>
               <div className="text-center mb-4">
-                <h2 className="fw-bold text-primary">Welcome Back</h2>
+                <h2>Login</h2>
                 <p className="text-muted">Sign in to your account</p>
               </div>
 
               {error && (
-                <Alert variant="danger" className="mb-4">
+                <Alert variant="danger" dismissible onClose={() => setError('')}>
                   {error}
                 </Alert>
               )}
@@ -88,6 +70,7 @@ const LoginPage: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="Enter your email"
+                    autoComplete="email"
                     required
                   />
                 </Form.Group>
@@ -100,51 +83,26 @@ const LoginPage: React.FC = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Enter your password"
+                    autoComplete="current-password"
                     required
                   />
                 </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    name="remember"
-                    checked={formData.remember}
-                    onChange={handleChange}
-                    label="Remember me"
-                  />
-                </Form.Group>
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  className="w-100 mb-3"
+                <Button 
+                  variant="primary" 
+                  type="submit" 
+                  className="w-100"
                   disabled={loading}
                 >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" />
-                      Signing In...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
+                  {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </Form>
 
-              <div className="text-center">
-                <Link to="/forgot-password" className="text-muted small">
-                  Forgot your password?
-                </Link>
-              </div>
-
-              <hr className="my-4" />
-
-              <div className="text-center">
-                <p className="mb-0">Don't have an account?</p>
-                <Link to="/register" className="btn btn-outline-primary mt-2">
-                  Create Account
-                </Link>
+              <div className="text-center mt-3">
+                <p>
+                  Don't have an account?{' '}
+                  <Link to="/register">Create one here</Link>
+                </p>
               </div>
             </Card.Body>
           </Card>

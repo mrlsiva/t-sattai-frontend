@@ -1,0 +1,204 @@
+/* Checkout Page Styles */
+.checkout-page {
+  min-height: 100vh;
+}
+
+.checkout-sections .card {
+  transition: all 0.3s ease;
+}
+
+.checkout-sections .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(88, 44, 0, 0.1) !important;
+}
+
+.form-control-custom {
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.form-control-custom:focus {
+  border-color: #582c00;
+  box-shadow: 0 0 0 0.2rem rgba(88, 44, 0, 0.15);
+}
+
+.custom-radio .form-check-input {
+  border-color: #582c00;
+  margin-top: 0.25rem;
+}
+
+.custom-radio .form-check-input:checked {
+  background-color: #582c00;
+  border-color: #582c00;
+}
+
+.custom-radio .form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(88, 44, 0, 0.15);
+}
+
+.order-summary-sticky .card {
+  border: 1px solid rgba(88, 44, 0, 0.1);
+}
+
+.cart-items .border-bottom:last-child {
+  border-bottom: none !important;
+}
+
+.order-totals hr {
+  border-color: rgba(88, 44, 0, 0.2);
+  margin: 1rem 0;
+}
+
+/* Payment Icons Styling */
+.payment-icons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.payment-icon {
+  width: 40px;
+  height: 28px;
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+/* Section Number Circles */
+.section-number {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #582c00, #6d3500);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(88, 44, 0, 0.2);
+}
+
+/* Address Selection Styling */
+.address-option {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 120px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.address-option:hover {
+  border-color: rgba(88, 44, 0, 0.3);
+  background-color: rgba(255, 205, 119, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(88, 44, 0, 0.1);
+}
+
+.address-option.selected {
+  border-color: #582c00;
+  background-color: rgba(255, 205, 119, 0.1);
+  box-shadow: 0 2px 12px rgba(88, 44, 0, 0.15);
+}
+
+.address-option .form-check-input {
+  margin-top: 2px;
+}
+
+.address-option .form-check-label {
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Text alignment utilities */
+.text-start {
+  text-align: left !important;
+}
+
+/* Custom radio button styling */
+.custom-radio .form-check-input {
+  border-color: #582c00;
+  margin-top: 0.25rem;
+}
+
+.custom-radio .form-check-input:checked {
+  background-color: #582c00;
+  border-color: #582c00;
+}
+
+.custom-radio .form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(88, 44, 0, 0.15);
+}
+
+/* Continue Button Styling */
+.continue-button {
+  background: linear-gradient(135deg, #582c00, #6d3500);
+  border: none;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(88, 44, 0, 0.2);
+}
+
+.continue-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(88, 44, 0, 0.3);
+  background: linear-gradient(135deg, #6d3500, #582c00);
+}
+
+.continue-button:active {
+  transform: translateY(0);
+}
+
+/* Savings Badge */
+.savings-badge {
+  background: linear-gradient(135deg, #fff3d0, #ffe8b8);
+  border: 1px solid rgba(88, 44, 0, 0.2);
+  color: #582c00;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .checkout-page .row {
+    margin: 0;
+  }
+
+  .order-summary-sticky {
+    position: static !important;
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .checkout-page {
+    padding: 1rem;
+  }
+
+  .section-number {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+
+  .continue-button {
+    width: 100%;
+    padding: 16px;
+  }
+}

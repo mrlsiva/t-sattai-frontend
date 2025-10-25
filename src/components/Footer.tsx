@@ -1,6 +1,7 @@
 import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import config from '../config';
 
 const Footer: React.FC = () => {
   return (
@@ -10,13 +11,32 @@ const Footer: React.FC = () => {
           <Row>
             {/* Company Info */}
             <Col lg={3} md={6} className="mb-4">
-              <h5 className="fw-bold text-primary mb-3">
-                <i className="fas fa-store me-2"></i>
-                EcomStore
-              </h5>
+              <div className="d-flex align-items-center mb-3">
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #DAA520, #D2B48C)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #8B4513'
+                }}>
+                  <span style={{ color: '#8B4513', fontSize: '24px' }}>🌴</span>
+                </div>
+                <div>
+                  <h5 className="fw-bold mb-1" style={{ color: '#DAA520' }}>
+                    {config.brand.name}
+                  </h5>
+                  <small style={{ color: '#228B22' }}>
+                    {config.brand.tagline}
+                  </small>
+                </div>
+              </div>
               <p className="text-white small mb-3">
-                Your trusted online shopping destination. We offer the best products 
-                at competitive prices with excellent customer service and fast delivery worldwide.
+                {config.brand.description}. Experience the authentic taste of traditional 
+                South Indian jaggery products, sourced directly from local farmers and 
+                processed using time-honored methods.
               </p>
               <div className="d-flex gap-3">
                 <a href="https://facebook.com" className="text-white hover-primary" target="_blank" rel="noopener noreferrer">

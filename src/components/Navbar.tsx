@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
+import config from '../config';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -32,8 +33,38 @@ const Navbar: React.FC = () => {
   return (
     <BootstrapNavbar expand="lg" className="bg-white shadow-sm sticky-top">
       <Container>
-        <BootstrapNavbar.Brand as={Link} to="/" className="fw-bold text-primary fs-3">
-          EcomStore
+        <BootstrapNavbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
+          <div style={{
+            width: '40px',
+            height: '40px',
+            background: 'linear-gradient(135deg, #DAA520, #D2B48C)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #8B4513'
+          }}>
+            <span style={{ color: '#8B4513', fontSize: '20px' }}>🌴</span>
+          </div>
+          <div>
+            <div style={{ 
+              color: '#8B4513', 
+              fontSize: '1.5rem', 
+              fontWeight: 'bold',
+              lineHeight: '1.1',
+              letterSpacing: '1px'
+            }}>
+              {config.brand.name}
+            </div>
+            <div style={{ 
+              color: '#228B22', 
+              fontSize: '0.7rem',
+              fontWeight: '500',
+              letterSpacing: '0.5px'
+            }}>
+              {config.brand.tagline}
+            </div>
+          </div>
         </BootstrapNavbar.Brand>
         
         <BootstrapNavbar.Toggle aria-controls="basic-navbar-nav" />

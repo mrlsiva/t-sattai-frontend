@@ -1,3 +1,6 @@
+/* Import Vembar Karupatti Brand Styles */
+@import "./styles/brand.css";
+
 .App {
   text-align: center;
 }

@@ -1,0 +1,315 @@
+/* Vembar Karupatti Brand Styling */
+
+:root {
+  /* Brand Colors */
+  --vk-brown: #8b4513;
+  --vk-light-brown: #d2b48c;
+  --vk-green: #228b22;
+  --vk-gold: #daa520;
+  --vk-cream: #f5f5dc;
+
+  /* Brand Colors (alternative naming) */
+  --brand-brown: #8b4513;
+  --brand-light-brown: #d2b48c;
+  --brand-green: #228b22;
+  --brand-gold: #daa520;
+  --brand-cream: #f5f5dc;
+
+  /* Override Bootstrap primary colors */
+  --bs-primary: var(--vk-brown);
+  --bs-primary-rgb: 139, 69, 19;
+}
+
+/* Brand Logo Styling */
+.vk-logo-circle {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--vk-gold), var(--vk-light-brown));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--vk-brown);
+  transition: transform 0.2s ease;
+}
+
+.vk-logo-circle:hover {
+  transform: scale(1.05);
+}
+
+/* Brand Text */
+.vk-brand-name {
+  color: var(--vk-brown);
+  font-weight: bold;
+  letter-spacing: 1px;
+  font-family: "Georgia", serif;
+}
+
+.vk-brand-tagline {
+  color: var(--vk-green);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  font-style: italic;
+}
+
+/* Button Overrides */
+.btn-primary,
+.btn-brand {
+  background-color: #8b4513;
+  border-color: #8b4513;
+  color: #ffcd77;
+  font-weight: 600;
+}
+
+.btn-primary:hover,
+.btn-brand:hover {
+  background-color: #654321;
+  border-color: #654321;
+  color: #ffcd77;
+}
+
+.btn-outline-primary {
+  color: #8b4513;
+  border-color: #8b4513;
+  background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+  background-color: #8b4513;
+  border-color: #8b4513;
+  color: #ffcd77;
+}
+
+.btn-light {
+  background-color: #ffcd77;
+  border-color: #8b4513;
+  color: #8b4513;
+  font-weight: 600;
+}
+
+.btn-light:hover {
+  background-color: #f4c766;
+  border-color: #8b4513;
+  color: #8b4513;
+}
+
+.btn-outline-light {
+  color: #8b4513;
+  border-color: #8b4513;
+  background-color: transparent;
+}
+
+.btn-outline-light:hover {
+  background-color: #8b4513;
+  border-color: #8b4513;
+  color: #ffcd77;
+}
+
+/* Secondary buttons */
+.btn-secondary {
+  background-color: #ffcd77;
+  border-color: #8b4513;
+  color: #8b4513;
+  font-weight: 600;
+}
+
+.btn-secondary:hover {
+  background-color: #f4c766;
+  border-color: #654321;
+  color: #654321;
+}
+
+/* Text Colors */
+.text-primary {
+  color: var(--vk-brown) !important;
+}
+
+.text-vk-green {
+  color: var(--vk-green) !important;
+}
+
+.text-vk-gold {
+  color: var(--vk-gold) !important;
+}
+
+.text-brand-brown {
+  color: var(--brand-brown) !important;
+}
+
+.text-brand-green {
+  color: var(--brand-green) !important;
+}
+
+.text-brand-gold {
+  color: var(--brand-gold) !important;
+}
+
+/* Background Colors */
+.bg-vk-cream {
+  background-color: var(--vk-cream) !important;
+}
+
+.bg-vk-light-brown {
+  background-color: var(--vk-light-brown) !important;
+}
+
+/* Card Styling */
+.vk-card {
+  border: 1px solid var(--vk-light-brown);
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.1);
+}
+
+.vk-card:hover {
+  box-shadow: 0 4px 16px rgba(139, 69, 19, 0.15);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* Product Cards */
+.product-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0;
+}
+
+.product-card:hover {
+  border-color: var(--vk-brown);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
+  transform: translateY(-3px);
+}
+
+/* Navbar Brand Animation */
+.navbar-brand:hover .vk-brand-name {
+  color: var(--vk-gold);
+  transition: color 0.3s ease;
+}
+
+/* Footer Social Icons */
+.social-icon {
+  color: var(--vk-light-brown);
+  transition: color 0.3s ease;
+}
+
+.social-icon:hover {
+  color: var(--vk-gold);
+}
+
+/* Alert Variants */
+.alert-vk-info {
+  background-color: rgba(218, 165, 32, 0.1);
+  border-color: var(--vk-gold);
+  color: var(--vk-brown);
+}
+
+/* Badges */
+.badge-vk {
+  background-color: var(--vk-brown);
+  color: white;
+}
+
+/* Loading Spinner */
+.spinner-vk {
+  color: var(--vk-brown);
+}
+
+/* Form Controls */
+.form-control:focus {
+  border-color: var(--vk-brown);
+  box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+.form-select:focus {
+  border-color: var(--vk-brown);
+  box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+/* Navigation Pills */
+.nav-pills .nav-link.active {
+  background-color: var(--vk-brown);
+}
+
+/* Progress Bar */
+.progress-bar {
+  background-color: var(--vk-brown);
+}
+
+/* Table */
+.table-vk th {
+  background-color: var(--vk-light-brown);
+  color: var(--vk-brown);
+  border-color: var(--vk-brown);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar-thumb {
+  background-color: var(--vk-light-brown);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vk-brown);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--vk-cream), var(--vk-light-brown));
+  color: var(--vk-brown);
+}
+
+/* Category Cards */
+.category-card {
+  background: linear-gradient(45deg, var(--vk-cream), white);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.category-card:hover {
+  border-color: var(--vk-brown);
+  background: linear-gradient(45deg, var(--vk-light-brown), var(--vk-cream));
+}
+
+/* Carousel Items */
+.carousel-item {
+  background: #ffcd77 !important;
+}
+
+.carousel-item .d-flex {
+  background: #ffcd77 !important;
+}
+
+.carousel-item h1,
+.carousel-item p,
+.carousel-item .lead,
+.carousel-item .display-4,
+.carousel-item div {
+  color: #8b4513 !important;
+}
+
+.carousel-item .btn-light {
+  color: #8b4513 !important;
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.carousel-item .btn-light:hover {
+  background-color: #f8f9fa !important;
+  color: #8b4513 !important;
+  border-color: #f8f9fa !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.carousel-item .btn-outline-light {
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  background-color: transparent !important;
+  font-weight: 600 !important;
+}
+
+.carousel-item .btn-outline-light:hover {
+  background-color: #ffffff !important;
+  color: #8b4513 !important;
+  border-color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}

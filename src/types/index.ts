@@ -5,8 +5,19 @@ export interface User {
     name: string;
     email: string;
     phone?: string;
+    bio?: string;
+    avatar?: string;
     date_of_birth?: string;
     gender?: string;
+    // Address fields
+    address?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zip_code?: string;
+    postal_code?: string;
+    // Admin and status fields
     is_admin: boolean;
     is_active: boolean;
     last_login_at?: string;

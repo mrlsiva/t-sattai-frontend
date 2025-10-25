@@ -141,7 +141,7 @@ const AdminProducts: React.FC = () => {
           
           // Try regular products API as fallback
           try {
-            const response = await productsApi.getProducts({
+            const response = await productsApi.getAll({
               page: currentPage,
               search: searchTerm,
             });

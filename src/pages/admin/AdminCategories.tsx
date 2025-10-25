@@ -55,7 +55,7 @@ const AdminCategories: React.FC = () => {
         
         // Fallback to regular categories API
         try {
-          const response = await categoriesApi.getCategories();
+          const response = await categoriesApi.getAll();
           console.log('AdminCategories: Regular categories API response:', response);
           
           if (response.success && response.data) {
