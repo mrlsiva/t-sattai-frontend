@@ -23,6 +23,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import ProductListPage from './pages/ProductListPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
@@ -115,6 +116,14 @@ function App() {
                           element={
                             <ProtectedRoute>
                               <OrderSuccessPage />
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
+                          path="/order-confirmation" 
+                          element={
+                            <ProtectedRoute>
+                              <OrderConfirmationPage />
                             </ProtectedRoute>
                           } 
                         />

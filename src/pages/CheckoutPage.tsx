@@ -427,8 +427,22 @@ const CheckoutPage: React.FC = () => {
   };
 
   const handlePaymentSuccess = (orderNumber: string) => {
+    // Prepare order details for confirmation page
+    const orderData = {
+      orderNumber,
+      total: grandTotal,
+      items: items,
+      shippingAddress: shippingAddress,
+      estimatedDelivery: availableShippingMethods.length > 0 
+        ? availableShippingMethods.find(method => method.id === selectedShippingMethod)?.estimated_days || '5-7 business days'
+        : '5-7 business days',
+      subtotal: subtotal,
+      tax: tax,
+      shipping: shipping
+    };
+
     clearCart();
-    navigate('/order-confirmation', { state: { orderNumber } });
+    navigate('/order-confirmation', { state: orderData });
   };
 
   const handleAddNewAddress = async (addressData: any) => {
