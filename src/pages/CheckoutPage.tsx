@@ -44,6 +44,7 @@ const CheckoutPage: React.FC = () => {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     name: '',
     line1: '',
@@ -51,7 +52,7 @@ const CheckoutPage: React.FC = () => {
     city: '',
     state: '',
     postal_code: '',
-    country: 'US', // Use 2-letter code by default
+    country: 'IN', // India only
   });
   
   // Dynamic calculation states
@@ -68,8 +69,8 @@ const CheckoutPage: React.FC = () => {
 
   // Use dynamic totals if available, fallback to hardcoded for initial load
   const subtotal = checkoutTotals?.subtotal || total;
-  const tax = checkoutTotals?.tax?.amount || (total * 0.08);
-  const shipping = checkoutTotals?.shipping?.cost || 10.00;
+  const tax = checkoutTotals?.tax?.amount || (total * 0.18); // 18% GST for India
+  const shipping = checkoutTotals?.shipping?.cost || 50.00; // ₹50 for India
   const grandTotal = checkoutTotals?.total || (total + tax + shipping);
 
   useEffect(() => {
@@ -130,7 +131,7 @@ const CheckoutPage: React.FC = () => {
 
       const requestData = {
         shipping_address: {
-          country: shippingAddress.country || 'US',
+          country: 'IN', // India only
           state: shippingAddress.state.trim(),
           city: shippingAddress.city.trim(),
           postal_code: shippingAddress.postal_code.trim()
@@ -150,6 +151,10 @@ const CheckoutPage: React.FC = () => {
 
       if (response.success && response.data) {
         setCheckoutTotals(response.data);
+        // Sync selectedShippingMethod with backend's returned method if available
+        if (response.data.shipping && response.data.shipping.id) {
+          setSelectedShippingMethod(response.data.shipping.id);
+        }
         console.log('Checkout totals received:', response.data);
       } else {
         console.error('API response indicates failure:', response);
@@ -157,8 +162,12 @@ const CheckoutPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error calculating totals:', error);
       
-      // Log detailed error information for debugging
-      if (error.response) {
+      // Check for timeout errors
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('10000ms exceeded')) {
+        console.warn('Request timed out - switching to fallback calculations');
+        setApiCalculationFailed(true);
+        setError('Connection timeout. We\'re using estimated calculations for now. You can retry to get exact totals.');
+      } else if (error.response) {
         console.error('Error response status:', error.response.status);
         console.error('Error response data:', error.response.data);
         console.error('Error response headers:', error.response.headers);
@@ -178,6 +187,10 @@ const CheckoutPage: React.FC = () => {
           console.warn('Disabling API calculations due to validation errors');
           setApiCalculationFailed(true);
         }
+      } else {
+        // Network or other errors
+        console.warn('Network error or other issue - switching to fallback calculations');
+        setApiCalculationFailed(true);
       }
       
       // Show user-friendly error message if available
@@ -198,7 +211,7 @@ const CheckoutPage: React.FC = () => {
 
     try {
       const response = await checkoutApi.getShippingMethods({
-        country: shippingAddress.country,
+        country: 'IN', // India only
         state: shippingAddress.state,
         city: shippingAddress.city,
         postal_code: shippingAddress.postal_code
@@ -214,7 +227,7 @@ const CheckoutPage: React.FC = () => {
         {
           id: 'standard',
           name: 'Standard Shipping',
-          cost: 10.00,
+          cost: 50.00, // ₹50 for India
           estimated_days: '3-7',
           description: 'Standard ground shipping'
         }
@@ -259,7 +272,7 @@ const CheckoutPage: React.FC = () => {
         city: '',
         state: '',
         postal_code: '',
-        country: 'US', // Use 2-letter code
+        country: 'IN', // India only
       });
     } else {
       const selectedAddress = savedAddresses.find(addr => addr.id === addressId);
@@ -271,11 +284,7 @@ const CheckoutPage: React.FC = () => {
           city: selectedAddress.city,
           state: selectedAddress.state,
           postal_code: selectedAddress.postal_code,
-          // Convert country name to 2-letter code if needed
-          country: selectedAddress.country === 'United States' ? 'US' : 
-                   selectedAddress.country === 'Canada' ? 'CA' : 
-                   selectedAddress.country === 'India' ? 'IN' : 
-                   selectedAddress.country.length === 2 ? selectedAddress.country : 'US',
+          country: 'IN', // India only
         };
         setShippingAddress(newAddress);
         
@@ -292,15 +301,11 @@ const CheckoutPage: React.FC = () => {
     
     // Process specific fields
     if (field === 'state') {
-      processedValue = value.toUpperCase().substring(0, 2); // Ensure 2-letter state code
+      processedValue = value.substring(0, 30); // Indian state names can be longer
     } else if (field === 'postal_code') {
-      processedValue = value.replace(/[^0-9-]/g, '').substring(0, 10); // Only numbers and hyphens
+      processedValue = value.replace(/[^0-9]/g, '').substring(0, 6); // 6-digit PIN code for India
     } else if (field === 'country') {
-      // Convert full country names to 2-letter codes
-      if (value === 'United States') processedValue = 'US';
-      else if (value === 'Canada') processedValue = 'CA';
-      else if (value === 'India') processedValue = 'IN';
-      else processedValue = value.toUpperCase().substring(0, 2); // Fallback to 2-letter code
+      processedValue = 'IN'; // Always India
     }
     
     setShippingAddress(prev => {
@@ -346,7 +351,7 @@ const CheckoutPage: React.FC = () => {
       // Create payment intent using the simple endpoint (no verification)
       const paymentData = {
         amount: Math.round(grandTotal * 100) / 100, // Ensure 2 decimal places
-        currency: 'usd',
+        currency: 'inr', // Indian Rupees
         // Add additional data that backend might need
         shipping_address: {
           name: shippingAddress.name,
@@ -355,10 +360,7 @@ const CheckoutPage: React.FC = () => {
           city: shippingAddress.city,
           state: shippingAddress.state,
           postal_code: shippingAddress.postal_code,
-          country: shippingAddress.country === 'United States' ? 'US' : 
-                   shippingAddress.country === 'Canada' ? 'CA' : 
-                   shippingAddress.country === 'India' ? 'IN' : 
-                   shippingAddress.country // fallback to original value
+          country: 'IN' // India only
         },
         metadata: {
           cart_items: items.length,
@@ -382,7 +384,7 @@ const CheckoutPage: React.FC = () => {
           // Try with minimal data for regular endpoint
           const minimalPaymentData = {
             amount: Math.round(grandTotal * 100) / 100,
-            currency: 'usd'
+            currency: 'inr' // Indian Rupees
           };
           
           result = await paymentApi.createPaymentIntent(minimalPaymentData);
@@ -447,16 +449,50 @@ const CheckoutPage: React.FC = () => {
 
   const handleAddNewAddress = async (addressData: any) => {
     try {
-      const response = await addressApi.addUserAddress(addressData);
+      let response;
+      if (editingAddress) {
+        // Update existing address
+        response = await addressApi.updateAddress(editingAddress.id, addressData);
+      } else {
+        // Add new address
+        response = await addressApi.addUserAddress(addressData);
+      }
+      
       if (response.success) {
         await loadSavedAddresses();
         setShowAddAddressModal(false);
+        setEditingAddress(null);
       } else {
         setError(response.message || 'Failed to save address');
       }
     } catch (error: any) {
-      console.error('Failed to add address:', error);
+      console.error('Failed to save address:', error);
       setError(error.response?.data?.message || error.message || 'Failed to save address');
+    }
+  };
+
+  const handleEditAddress = (address: SavedAddress) => {
+    setEditingAddress(address);
+    setShowAddAddressModal(true);
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    if (window.confirm('Are you sure you want to delete this address?')) {
+      try {
+        const response = await addressApi.deleteAddress(addressId);
+        if (response.success) {
+          await loadSavedAddresses();
+          // If deleted address was selected, reset to new
+          if (selectedAddressId === addressId) {
+            setSelectedAddressId('new');
+          }
+        } else {
+          setError(response.message || 'Failed to delete address');
+        }
+      } catch (error: any) {
+        console.error('Failed to delete address:', error);
+        setError(error.response?.data?.message || error.message || 'Failed to delete address');
+      }
     }
   };
 
@@ -467,40 +503,67 @@ const CheckoutPage: React.FC = () => {
            shippingAddress.state && 
            shippingAddress.postal_code;
     
-    // Additional validation for specific fields
-    const isPostalCodeValid = /^[0-9]{5}(-[0-9]{4})?$/.test(shippingAddress.postal_code || '');
-    const isStateValid = /^[A-Z]{2}$/.test(shippingAddress.state?.toUpperCase() || '');
+    // Additional validation for Indian addresses
+    const isPinCodeValid = /^[0-9]{6}$/.test(shippingAddress.postal_code || '');
+    const isStateValid = shippingAddress.state && shippingAddress.state.length >= 2;
     
     console.log('Form validation details:', {
       hasRequiredFields: !!isValid,
-      postalCodeValid: isPostalCodeValid,
+      pinCodeValid: isPinCodeValid,
       stateValid: isStateValid,
       shippingAddress
     });
     
-    return isValid && isPostalCodeValid;
+    return isValid && isPinCodeValid;
   };
 
   return (
     <Container fluid className="checkout-page py-4" style={{ backgroundColor: '#f8f9fa' }}>
       <Row className="justify-content-center">
         <Col xl={10} lg={11}>
+          {/* Main Checkout Title */}
+          <h2 className="mb-4 text-start" style={{ color: '#582c00', fontWeight: '600' }}>Checkout</h2>
+          
           <Row>
             {/* Left Column - Shipping & Payment */}
             <Col lg={7} className="pe-lg-4">
               <div className="checkout-sections">
-                <h2 className="mb-4" style={{ color: '#582c00', fontWeight: '600' }}>Checkout</h2>
 
                 {error && (
                   <Alert variant="danger" className="mb-4">
-                    {error}
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-start flex-grow-1">
+                        <i className="fas fa-exclamation-circle me-2 mt-1"></i>
+                        <div className="text-start">
+                          <strong>Oops! Something went wrong</strong>
+                          <div className="mt-1 text-start">{error}</div>
+                        </div>
+                      </div>
+                      {error.includes('timeout') && (
+                        <div className="ms-3 flex-shrink-0 d-flex align-items-center">
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => {
+                              setError(null);
+                              setApiCalculationFailed(false);
+                              setLastCalculationTime(0);
+                              calculateCheckoutTotals();
+                            }}
+                            style={{ fontSize: '12px' }}
+                          >
+                            <i className="fas fa-redo me-1"></i>Try Again
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </Alert>
                 )}
 
                 {/* Shipping Address Section */}
                 <Card className="mb-4 border-0 shadow-sm">
                   <Card.Body className="p-4">
-                    <div className="d-flex align-items-center mb-3">
+                    <div className="d-flex align-items-center mb-3 p-3 rounded" style={{ backgroundColor: '#f8f5f0' }}>
                       <div 
                         className="rounded-circle d-flex align-items-center justify-content-center me-3"
                         style={{ 
@@ -512,11 +575,11 @@ const CheckoutPage: React.FC = () => {
                           fontWeight: 'bold'
                         }}
                       >
-                        🚚
+                        <i className="fas fa-shipping-fast"></i>
                       </div>
-                      <h5 className="mb-0" style={{ color: '#582c00', fontWeight: '600' }}>
+                      <h5 className="mb-0 text-start" style={{ color: '#582c00', fontWeight: '600' }}>
                         Shipping Address
-                        <small className="text-muted d-block" style={{ fontSize: '14px', fontWeight: '400' }}>
+                        <small className="text-muted d-block text-start" style={{ fontSize: '14px', fontWeight: '400' }}>
                           Where should we deliver your order?
                         </small>
                       </h5>
@@ -525,17 +588,20 @@ const CheckoutPage: React.FC = () => {
                     {/* Saved Addresses Selection */}
                     {savedAddresses.length > 0 && (
                       <div className="mb-4">
-                        <div className="border rounded p-3 mb-3" style={{ backgroundColor: '#fefefe' }}>
+                        <div style={{ backgroundColor: '#fefefe' }}>
                           <Row>
                             {savedAddresses.map((address) => (
                               <Col md={6} key={address.id} className="mb-3">
                                 <div 
-                                  className={`address-option p-3 border rounded ${selectedAddressId === address.id ? 'selected' : ''}`}
+                                  className={`address-option p-3 border rounded position-relative ${selectedAddressId === address.id ? 'selected' : ''}`}
                                   onClick={() => handleAddressSelect(address.id)}
                                   style={{ 
                                     cursor: 'pointer',
                                     borderColor: selectedAddressId === address.id ? '#582c00' : '#e6e6e6',
-                                    backgroundColor: selectedAddressId === address.id ? 'rgba(255, 205, 119, 0.1)' : 'white'
+                                    backgroundColor: selectedAddressId === address.id ? 'rgba(255, 205, 119, 0.1)' : 'white',
+                                    height: '180px',
+                                    display: 'flex',
+                                    flexDirection: 'column'
                                   }}
                                 >
                                   <Form.Check
@@ -546,21 +612,68 @@ const CheckoutPage: React.FC = () => {
                                     onChange={() => handleAddressSelect(address.id)}
                                     className="custom-radio"
                                     label={
-                                      <div className="ps-2 text-start">
+                                      <div className="ps-2 text-start flex-grow-1">
+                                        {address.is_default && (
+                                          <span 
+                                            className="badge position-absolute"
+                                            style={{ 
+                                              backgroundColor: '#ffcd77', 
+                                              color: '#582c00',
+                                              top: '10px',
+                                              right: '10px',
+                                              fontSize: '10px',
+                                              padding: '4px 8px'
+                                            }}
+                                          >
+                                            Default
+                                          </span>
+                                        )}
                                         <div className="fw-semibold" style={{ color: '#582c00' }}>
                                           {address.full_name}
                                           {address.company && <div className="text-muted small">{address.company}</div>}
-                                          {address.is_default && (
-                                            <span 
-                                              className="badge ms-2"
-                                              style={{ backgroundColor: '#ffcd77', color: '#582c00' }}
-                                            >
-                                              Default
-                                            </span>
-                                          )}
                                         </div>
                                         <div className="text-muted small text-start mt-1">
                                           {address.formatted_address}
+                                        </div>
+                                        <div className="mt-auto pt-2">
+                                          <Button
+                                            variant="outline-primary"
+                                            size="sm"
+                                            className="me-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditAddress(address);
+                                            }}
+                                            style={{ 
+                                              borderColor: '#582c00',
+                                              color: '#582c00',
+                                              fontSize: '12px',
+                                              transition: 'all 0.3s ease'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.backgroundColor = '#582c00';
+                                              e.currentTarget.style.color = 'white';
+                                              e.currentTarget.style.borderColor = '#582c00';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.backgroundColor = 'transparent';
+                                              e.currentTarget.style.color = '#582c00';
+                                              e.currentTarget.style.borderColor = '#582c00';
+                                            }}
+                                          >
+                                            <i className="fas fa-edit me-1"></i>Edit
+                                          </Button>
+                                          <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteAddress(address.id);
+                                            }}
+                                            style={{ fontSize: '12px' }}
+                                          >
+                                            <i className="fas fa-trash me-1"></i>Delete
+                                          </Button>
                                         </div>
                                       </div>
                                     }
@@ -570,32 +683,43 @@ const CheckoutPage: React.FC = () => {
                             ))}
                             <Col md={6} className="mb-3">
                               <div 
-                                className={`address-option p-3 border rounded ${selectedAddressId === 'new' ? 'selected' : ''}`}
-                                onClick={() => handleAddressSelect('new')}
+                                className="address-option p-3 border rounded position-relative"
+                                onClick={() => setShowAddAddressModal(true)}
                                 style={{ 
                                   cursor: 'pointer',
-                                  borderColor: selectedAddressId === 'new' ? '#582c00' : '#e6e6e6',
-                                  backgroundColor: selectedAddressId === 'new' ? 'rgba(255, 205, 119, 0.1)' : 'white'
+                                  borderColor: '#e6e6e6',
+                                  backgroundColor: 'white',
+                                  height: '180px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = '#582c00';
+                                  e.currentTarget.style.backgroundColor = 'rgba(255, 205, 119, 0.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = '#e6e6e6';
+                                  e.currentTarget.style.backgroundColor = 'white';
                                 }}
                               >
-                                <Form.Check
-                                  type="radio"
-                                  id="address-new"
-                                  name="addressSelection"
-                                  checked={selectedAddressId === 'new'}
-                                  onChange={() => handleAddressSelect('new')}
-                                  className="custom-radio"
-                                  label={
-                                    <div className="ps-2 text-start">
-                                      <div className="fw-semibold" style={{ color: '#582c00' }}>
-                                        + Use new address
-                                      </div>
-                                      <div className="text-muted small text-start mt-1">
-                                        Enter a new shipping address
-                                      </div>
-                                    </div>
-                                  }
-                                />
+                                <div className="text-center d-flex flex-column justify-content-center align-items-center h-100 w-100">
+                                  <div className="mb-3">
+                                    <i className="fas fa-plus-circle" style={{ 
+                                      fontSize: '2rem', 
+                                      color: '#582c00',
+                                      opacity: 0.7
+                                    }}></i>
+                                  </div>
+                                  <div className="fw-semibold" style={{ color: '#582c00' }}>
+                                    Add New Address
+                                  </div>
+                                  <div className="text-muted small mt-1">
+                                    Click to add a new shipping address
+                                  </div>
+                                </div>
                               </div>
                             </Col>
                           </Row>
@@ -603,176 +727,87 @@ const CheckoutPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Address Form */}
-                    <Form>
-                      <Row>
-                        <Col md={12}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Full Name</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={shippingAddress.name}
-                              onChange={(e) => handleAddressChange('name', e.target.value)}
-                              placeholder="Enter your full name"
-                              className="form-control-custom"
-                              style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      <Row>
-                        <Col md={12}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Address Line 1</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={shippingAddress.line1}
-                              onChange={(e) => handleAddressChange('line1', e.target.value)}
-                              placeholder="Street address"
-                              className="form-control-custom"
-                              style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      <Row>
-                        <Col md={12}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Address Line 2 (Optional)</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={shippingAddress.line2 || ''}
-                              onChange={(e) => handleAddressChange('line2', e.target.value)}
-                              placeholder="Apartment, suite, etc."
-                              className="form-control-custom"
-                              style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
-                            />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>City</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={shippingAddress.city}
-                              onChange={(e) => handleAddressChange('city', e.target.value)}
-                              placeholder="City"
-                              className="form-control-custom"
-                              style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>State</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={shippingAddress.state}
-                              onChange={(e) => handleAddressChange('state', e.target.value)}
-                              placeholder="NY"
-                              className="form-control-custom"
-                              style={{ 
-                                borderColor: shippingAddress.state && !/^[A-Z]{2}$/.test(shippingAddress.state) ? '#dc3545' : '#e6e6e6', 
-                                borderRadius: '8px' 
-                              }}
-                              maxLength={2}
-                              required
-                            />
-                            {shippingAddress.state && !/^[A-Z]{2}$/.test(shippingAddress.state) && (
-                              <small className="text-danger">Use 2-letter state code (e.g., NY, CA)</small>
-                            )}
-                          </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>ZIP Code</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={shippingAddress.postal_code}
-                              onChange={(e) => handleAddressChange('postal_code', e.target.value)}
-                              placeholder="12345"
-                              className="form-control-custom"
-                              style={{ 
-                                borderColor: shippingAddress.postal_code && !/^[0-9]{5}(-[0-9]{4})?$/.test(shippingAddress.postal_code) ? '#dc3545' : '#e6e6e6', 
-                                borderRadius: '8px' 
-                              }}
-                              maxLength={10}
-                              required
-                            />
-                            {shippingAddress.postal_code && !/^[0-9]{5}(-[0-9]{4})?$/.test(shippingAddress.postal_code) && (
-                              <small className="text-danger">Use 5-digit ZIP code (e.g., 12345)</small>
-                            )}
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      {selectedAddressId === 'new' && (
-                        <div className="mb-3">
-                          <Button 
-                            variant="outline-secondary" 
-                            size="sm"
-                            onClick={() => setShowAddAddressModal(true)}
+                    {/* Shipping Method Selection - Always show */}
+                    {availableShippingMethods.length > 0 && (
+                      <div className="mb-3">
+                        <div className="d-flex align-items-center mb-3 p-3 rounded" style={{ backgroundColor: '#f8f5f0' }}>
+                          <div 
+                            className="rounded-circle d-flex align-items-center justify-content-center me-3"
                             style={{ 
-                              borderColor: '#582c00',
-                              color: '#582c00'
+                              width: '40px', 
+                              height: '40px', 
+                              backgroundColor: '#582c00',
+                              color: 'white',
+                              fontSize: '18px',
+                              fontWeight: 'bold'
                             }}
                           >
-                            💾 Save this address for future use
-                          </Button>
+                            <i className="fas fa-truck"></i>
+                          </div>
+                          <h5 className="mb-0 text-start" style={{ color: '#582c00', fontWeight: '600' }}>
+                            Shipping Method
+                            <small className="text-muted d-block text-start" style={{ fontSize: '14px', fontWeight: '400' }}>
+                              Choose how you'd like to receive your order
+                            </small>
+                          </h5>
                         </div>
-                      )}
-
-                      {/* Shipping Method Selection */}
-                      {availableShippingMethods.length > 0 && (
-                        <div className="mb-3">
-                          <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Shipping Method</Form.Label>
-                          <div className="border rounded p-3" style={{ backgroundColor: '#fefefe' }}>
-                            {availableShippingMethods.map((method) => (
-                              <Form.Check
-                                key={method.id}
-                                type="radio"
-                                id={`shipping-${method.id}`}
-                                name="shippingMethod"
-                                value={method.id}
-                                checked={selectedShippingMethod === method.id}
-                                onChange={(e) => setSelectedShippingMethod(e.target.value)}
-                                className="mb-2"
-                                label={
-                                  <div className="d-flex justify-content-between align-items-center w-100">
-                                    <div>
-                                      <div className="fw-semibold" style={{ color: '#582c00' }}>
-                                        {method.name}
+                        <div className="border rounded p-3" style={{ backgroundColor: '#fefefe' }}>
+                          {availableShippingMethods.map((method) => {
+                            // If checkoutTotals.shipping exists, always highlight and show its info
+                            const isSelected = (checkoutTotals?.shipping?.id
+                              ? checkoutTotals.shipping.id === method.id
+                              : selectedShippingMethod === method.id);
+                            return (
+                              <div key={method.id} className="mb-2 d-flex align-items-start" style={{ width: '100%' }}>
+                                <Form.Check
+                                  type="radio"
+                                  id={`shipping-${method.id}`}
+                                  name="shippingMethod"
+                                  value={method.id}
+                                  checked={isSelected}
+                                  onChange={(e) => setSelectedShippingMethod(e.target.value)}
+                                  className="me-3"
+                                  style={{ marginTop: '2px' }}
+                                />
+                                <label 
+                                  htmlFor={`shipping-${method.id}`} 
+                                  className="form-check-label flex-grow-1"
+                                  style={{ width: '100%', display: 'block', cursor: 'pointer' }}
+                                >
+                                  <div className="d-flex justify-content-between align-items-center" style={{ width: '100%' }}>
+                                    <div className="text-start">
+                                      <div className="fw-semibold text-start" style={{ color: '#582c00' }}>
+                                        {/* Always show backend's shipping name if this is the selected one */}
+                                        {isSelected && checkoutTotals?.shipping?.name
+                                          ? checkoutTotals.shipping.name
+                                          : method.name}
                                       </div>
-                                      <small className="text-muted">
-                                        {method.description} • {method.estimated_days} days
+                                      <small className="text-muted text-start">
+                                        {isSelected && checkoutTotals?.shipping?.description
+                                          ? `${checkoutTotals.shipping.description} • ${checkoutTotals.shipping.estimated_days} days`
+                                          : `${method.description} • ${method.estimated_days} days`}
                                       </small>
                                     </div>
-                                    <div className="fw-semibold" style={{ color: '#582c00' }}>
-                                      ${method.cost.toFixed(2)}
+                                    <div className="fw-semibold d-flex align-items-center" style={{ color: '#582c00' }}>
+                                      ₹{(isSelected && checkoutTotals?.shipping?.cost !== undefined
+                                        ? checkoutTotals.shipping.cost
+                                        : method.cost).toFixed(2)}
                                     </div>
                                   </div>
-                                }
-                              />
-                            ))}
-                          </div>
+                                </label>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </Form>
+                      </div>
+                    )}
                   </Card.Body>
                 </Card>
 
                 {/* Payment Method Section */}
                 <Card className="border-0 shadow-sm">
                   <Card.Body className="p-4">
-                    <div className="d-flex align-items-center mb-3">
+                    <div className="d-flex align-items-center mb-3 p-3 rounded" style={{ backgroundColor: '#f8f5f0' }}>
                       <div 
                         className="rounded-circle d-flex align-items-center justify-content-center me-3"
                         style={{ 
@@ -784,11 +819,11 @@ const CheckoutPage: React.FC = () => {
                           fontWeight: 'bold'
                         }}
                       >
-                        💳
+                        <i className="fas fa-credit-card"></i>
                       </div>
-                      <h5 className="mb-0" style={{ color: '#582c00', fontWeight: '600' }}>
+                      <h5 className="mb-0 text-start" style={{ color: '#582c00', fontWeight: '600' }}>
                         Payment Method
-                        <small className="text-muted d-block" style={{ fontSize: '14px', fontWeight: '400' }}>
+                        <small className="text-muted d-block text-start" style={{ fontSize: '14px', fontWeight: '400' }}>
                           Please choose your payment method
                         </small>
                       </h5>
@@ -863,9 +898,27 @@ const CheckoutPage: React.FC = () => {
               <div className="order-summary-sticky" style={{ position: 'sticky', top: '20px' }}>
                 <Card className="border-0 shadow-sm">
                   <Card.Body className="p-4">
-                    <h5 className="mb-4" style={{ color: '#582c00', fontWeight: '600' }}>
-                      Order Summary
-                    </h5>
+                    <div className="d-flex align-items-center mb-4 p-3 rounded" style={{ backgroundColor: '#f8f5f0' }}>
+                      <div 
+                        className="rounded-circle d-flex align-items-center justify-content-center me-3"
+                        style={{ 
+                          width: '40px', 
+                          height: '40px', 
+                          backgroundColor: '#582c00',
+                          color: 'white',
+                          fontSize: '18px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        <i className="fas fa-receipt"></i>
+                      </div>
+                      <h5 className="mb-0 text-start" style={{ color: '#582c00', fontWeight: '600' }}>
+                        Order Summary
+                        <small className="text-muted d-block text-start" style={{ fontSize: '14px', fontWeight: '400' }}>
+                          Review your items and total
+                        </small>
+                      </h5>
+                    </div>
 
                     {/* Cart Items */}
                     <div className="cart-items mb-4">
@@ -879,7 +932,7 @@ const CheckoutPage: React.FC = () => {
                           </div>
                           <div className="text-end">
                             <span className="fw-semibold" style={{ color: '#582c00' }}>
-                              ${(parseFloat(item.product.sale_price || item.product.price) * item.quantity).toFixed(2)}
+                              ₹{(parseFloat(item.product.sale_price || item.product.price) * item.quantity).toFixed(2)}
                             </span>
                           </div>
                         </div>
@@ -893,7 +946,7 @@ const CheckoutPage: React.FC = () => {
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <span className="text-muted text-start">Subtotal:</span>
                         <span className="text-end" style={{ color: '#582c00' }}>
-                          ${subtotal.toFixed(2)}
+                          ₹{subtotal.toFixed(2)}
                         </span>
                       </div>
                       <div className="d-flex justify-content-between align-items-center mb-2">
@@ -909,13 +962,13 @@ const CheckoutPage: React.FC = () => {
                           {calculatingTotals ? (
                             <Spinner animation="border" size="sm" />
                           ) : (
-                            `$${shipping.toFixed(2)}`
+                            `₹${shipping.toFixed(2)}`
                           )}
                         </span>
                       </div>
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <span className="text-muted text-start">
-                          Tax:
+                          GST (18%):
                           {checkoutTotals?.tax?.description && (
                             <small className="d-block" style={{ fontSize: '12px' }}>
                               {checkoutTotals.tax.description}
@@ -927,7 +980,7 @@ const CheckoutPage: React.FC = () => {
                           {calculatingTotals ? (
                             <Spinner animation="border" size="sm" />
                           ) : (
-                            `$${tax.toFixed(2)}`
+                            `₹${tax.toFixed(2)}`
                           )}
                         </span>
                       </div>
@@ -940,7 +993,7 @@ const CheckoutPage: React.FC = () => {
                           {calculatingTotals ? (
                             <Spinner animation="border" size="sm" />
                           ) : (
-                            `$${grandTotal.toFixed(2)}`
+                            `₹${grandTotal.toFixed(2)}`
                           )}
                         </span>
                       </div>
@@ -952,9 +1005,15 @@ const CheckoutPage: React.FC = () => {
                       >
                         <small className="fw-semibold">
                           {checkoutTotals?.shipping?.estimated_days ? (
-                            `🚚 Estimated delivery: ${checkoutTotals.shipping.estimated_days} days`
+                            <>
+                              <i className="fas fa-truck me-1"></i>
+                              Estimated delivery: {checkoutTotals.shipping.estimated_days} days
+                            </>
                           ) : (
-                            '🎉 Free shipping on orders over $50'
+                            <>
+                              <i className="fas fa-gift me-1"></i>
+                              Free shipping on orders over ₹2000
+                            </>
                           )}
                         </small>
                       </div>
@@ -978,23 +1037,45 @@ const CheckoutPage: React.FC = () => {
 
                       {/* API calculation status */}
                       {apiCalculationFailed && (
-                        <div className="text-center mt-2">
-                          <small className="text-warning d-block">
-                            ⚠️ Using estimated calculations (API temporarily unavailable)
-                          </small>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 mt-1"
-                            style={{ fontSize: '12px', color: '#582c00' }}
-                            onClick={() => {
-                              setApiCalculationFailed(false);
-                              setLastCalculationTime(0);
-                              calculateCheckoutTotals();
+                        <div className="text-center mt-3">
+                          <div 
+                            className="alert alert-warning py-2 px-3 mb-2"
+                            style={{ 
+                              backgroundColor: '#fff3cd', 
+                              borderColor: '#ffeaa7',
+                              color: '#856404',
+                              fontSize: '14px'
                             }}
                           >
-                            🔄 Retry calculation
-                          </Button>
+                            <div className="d-flex align-items-center justify-content-center mb-2">
+                              <i className="fas fa-exclamation-triangle me-2"></i>
+                              <strong>Connection Issue</strong>
+                            </div>
+                            <div className="text-center mb-2">
+                              We're having trouble connecting to our servers. Don't worry - we're showing estimated totals so you can continue with your order.
+                            </div>
+                            <Button
+                              variant="warning"
+                              size="sm"
+                              className="mt-2"
+                              style={{ 
+                                backgroundColor: '#ffc107',
+                                borderColor: '#ffc107',
+                                color: '#000',
+                                fontWeight: '600',
+                                fontSize: '12px',
+                                padding: '6px 16px'
+                              }}
+                              onClick={() => {
+                                setApiCalculationFailed(false);
+                                setLastCalculationTime(0);
+                                setError(null);
+                                calculateCheckoutTotals();
+                              }}
+                            >
+                              <i className="fas fa-redo me-1"></i>Try Again
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1009,9 +1090,13 @@ const CheckoutPage: React.FC = () => {
       {/* Add New Address Modal */}
       <AddAddressModal
         show={showAddAddressModal}
-        onHide={() => setShowAddAddressModal(false)}
+        onHide={() => {
+          setShowAddAddressModal(false);
+          setEditingAddress(null);
+        }}
         onSave={handleAddNewAddress}
         user={user}
+        editingAddress={editingAddress}
       />
     </Container>
   );
@@ -1023,9 +1108,10 @@ const AddAddressModal: React.FC<{
   onHide: () => void;
   onSave: (address: any) => void;
   user: any;
-}> = ({ show, onHide, onSave, user }) => {
+  editingAddress: SavedAddress | null;
+}> = ({ show, onHide, onSave, user, editingAddress }) => {
   const [formData, setFormData] = useState({
-    type: 'shipping' as const,
+    type: 'shipping' as 'shipping' | 'billing' | 'both',
     first_name: user?.name?.split(' ')[0] || '',
     last_name: user?.name?.split(' ').slice(1).join(' ') || '',
     company: '',
@@ -1034,12 +1120,47 @@ const AddAddressModal: React.FC<{
     city: '',
     state: '',
     postal_code: '',
-    country: 'US', // Use 2-letter code
+    country: 'IN', // India only
     phone: '',
     is_default: false,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Initialize form with editing address data
+  useEffect(() => {
+    if (editingAddress) {
+      setFormData({
+        type: editingAddress.type,
+        first_name: editingAddress.first_name,
+        last_name: editingAddress.last_name,
+        company: editingAddress.company || '',
+        address_line_1: editingAddress.address_line_1,
+        address_line_2: editingAddress.address_line_2 || '',
+        city: editingAddress.city,
+        state: editingAddress.state,
+        postal_code: editingAddress.postal_code,
+        country: 'IN', // India only
+        phone: editingAddress.phone || '',
+        is_default: editingAddress.is_default,
+      });
+    } else {
+      setFormData({
+        type: 'shipping' as 'shipping' | 'billing' | 'both',
+        first_name: user?.name?.split(' ')[0] || '',
+        last_name: user?.name?.split(' ').slice(1).join(' ') || '',
+        company: '',
+        address_line_1: '',
+        address_line_2: '',
+        city: '',
+        state: '',
+        postal_code: '',
+        country: 'IN', // India only
+        phone: '',
+        is_default: false,
+      });
+    }
+  }, [editingAddress, user]);
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -1056,7 +1177,7 @@ const AddAddressModal: React.FC<{
     try {
       await onSave(formData);
       setFormData({
-        type: 'shipping' as const,
+        type: 'shipping' as 'shipping' | 'billing' | 'both',
         first_name: user?.name?.split(' ')[0] || '',
         last_name: user?.name?.split(' ').slice(1).join(' ') || '',
         company: '',
@@ -1065,7 +1186,7 @@ const AddAddressModal: React.FC<{
         city: '',
         state: '',
         postal_code: '',
-        country: 'United States',
+        country: 'IN', // India only
         phone: '',
         is_default: false,
       });
@@ -1081,7 +1202,15 @@ const AddAddressModal: React.FC<{
     <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton style={{ borderBottom: '1px solid #e6e6e6' }}>
         <Modal.Title style={{ color: '#582c00', fontWeight: '600' }}>
-          💾 Add New Address
+          {editingAddress ? (
+            <>
+              <i className="fas fa-edit me-2"></i>Edit Address
+            </>
+          ) : (
+            <>
+              <i className="fas fa-plus me-2"></i>Add New Address
+            </>
+          )}
         </Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
@@ -1093,7 +1222,7 @@ const AddAddressModal: React.FC<{
           )}
           
           <Row>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>First Name</Form.Label>
                 <Form.Control
@@ -1106,7 +1235,7 @@ const AddAddressModal: React.FC<{
                 />
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Last Name</Form.Label>
                 <Form.Control
@@ -1119,10 +1248,7 @@ const AddAddressModal: React.FC<{
                 />
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row>
-            <Col md={12}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Company (Optional)</Form.Label>
                 <Form.Control
@@ -1137,7 +1263,7 @@ const AddAddressModal: React.FC<{
           </Row>
 
           <Row>
-            <Col md={12}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Address Line 1</Form.Label>
                 <Form.Control
@@ -1150,10 +1276,7 @@ const AddAddressModal: React.FC<{
                 />
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row>
-            <Col md={12}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Address Line 2 (Optional)</Form.Label>
                 <Form.Control
@@ -1165,10 +1288,7 @@ const AddAddressModal: React.FC<{
                 />
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>City</Form.Label>
                 <Form.Control
@@ -1181,7 +1301,10 @@ const AddAddressModal: React.FC<{
                 />
               </Form.Group>
             </Col>
-            <Col md={3}>
+          </Row>
+
+          <Row>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>State</Form.Label>
                 <Form.Control
@@ -1189,43 +1312,28 @@ const AddAddressModal: React.FC<{
                   value={formData.state}
                   onChange={(e) => handleChange('state', e.target.value)}
                   className="form-control-custom"
+                  placeholder="Maharashtra"
                   style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
                   required
                 />
               </Form.Group>
             </Col>
-            <Col md={3}>
+            <Col md={4}>
               <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>ZIP Code</Form.Label>
+                <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>PIN Code</Form.Label>
                 <Form.Control
                   type="text"
                   value={formData.postal_code}
-                  onChange={(e) => handleChange('postal_code', e.target.value)}
+                  onChange={(e) => handleChange('postal_code', e.target.value.replace(/[^0-9]/g, '').substring(0, 6))}
                   className="form-control-custom"
+                  placeholder="400001"
                   style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
+                  maxLength={6}
                   required
                 />
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Country</Form.Label>
-                <Form.Select
-                  value={formData.country}
-                  onChange={(e) => handleChange('country', e.target.value)}
-                  className="form-control-custom"
-                  style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
-                >
-                  <option value="US">United States</option>
-                  <option value="CA">Canada</option>
-                  <option value="IN">India</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Phone (Optional)</Form.Label>
                 <Form.Control
@@ -1233,6 +1341,7 @@ const AddAddressModal: React.FC<{
                   value={formData.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
                   className="form-control-custom"
+                  placeholder="+91 9876543210"
                   style={{ borderColor: '#e6e6e6', borderRadius: '8px' }}
                 />
               </Form.Group>
@@ -1240,7 +1349,7 @@ const AddAddressModal: React.FC<{
           </Row>
 
           <Row>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold" style={{ color: '#582c00' }}>Address Type</Form.Label>
                 <Form.Select
@@ -1255,7 +1364,7 @@ const AddAddressModal: React.FC<{
                 </Form.Select>
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3 d-flex align-items-end">
                 <Form.Check
                   type="checkbox"
@@ -1266,6 +1375,9 @@ const AddAddressModal: React.FC<{
                   style={{ marginBottom: '8px' }}
                 />
               </Form.Group>
+            </Col>
+            <Col md={4}>
+              {/* Empty column for alignment */}
             </Col>
           </Row>
         </Modal.Body>
@@ -1289,10 +1401,10 @@ const AddAddressModal: React.FC<{
             {saving ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
-                Saving...
+                {editingAddress ? 'Updating...' : 'Saving...'}
               </>
             ) : (
-              'Save Address'
+              editingAddress ? 'Update Address' : 'Save Address'
             )}
           </Button>
         </Modal.Footer>

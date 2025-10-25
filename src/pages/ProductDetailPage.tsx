@@ -174,16 +174,16 @@ const ProductDetailPage: React.FC = () => {
   };
 
   const formatPrice = (price: string | number | undefined) => {
-    if (!price || price === null || price === undefined) return '$0.00';
+    if (!price || price === null || price === undefined) return '₹0.00';
     
     // Handle different price formats from API
     const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
     
-    if (isNaN(numericPrice)) return '$0.00';
+    if (isNaN(numericPrice)) return '₹0.00';
     
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
     }).format(numericPrice);
   };
 
@@ -602,7 +602,7 @@ const ProductDetailPage: React.FC = () => {
                   <Col md={6}>
                     <div className="mb-3">
                       <h6><i className="fas fa-shipping-fast text-primary me-2"></i>Fast Shipping</h6>
-                      <p className="text-muted">Free shipping on orders over $50. Standard delivery in 3-5 business days.</p>
+                      <p className="text-muted">Free shipping on orders over ₹2000. Standard delivery in 3-5 business days.</p>
                     </div>
                     <div className="mb-3">
                       <h6><i className="fas fa-undo text-success me-2"></i>Easy Returns</h6>

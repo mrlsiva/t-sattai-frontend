@@ -173,7 +173,7 @@ const Footer: React.FC = () => {
                 <small className="text-white">
                   123 Commerce Street<br/>
                   New York, NY 10001<br/>
-                  United States
+                  India
                 </small>
               </div>
               <div className="d-flex align-items-center mb-2">

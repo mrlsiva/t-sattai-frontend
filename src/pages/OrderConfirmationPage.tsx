@@ -115,10 +115,10 @@ const OrderConfirmationPage: React.FC = () => {
                         <h6 className="text-muted mb-2">Items Ordered:</h6>
                         {orderDetails.items.length > 0 ? (
                           orderDetails.items.map((item, index) => (
-                            <div key={index} className="d-flex justify-content-between align-items-center mb-2">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
                               <span>{item.product?.name || 'Product'} (Qty: {item.quantity || 1})</span>
                               <span style={{ color: '#582c00', fontWeight: '500' }}>
-                                ${((item.product?.sale_price || item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                ₹{((item.product?.sale_price || item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}
                               </span>
                             </div>
                           ))
@@ -134,7 +134,7 @@ const OrderConfirmationPage: React.FC = () => {
                               Total Amount:
                             </h6>
                             <h6 className="mb-0" style={{ color: '#582c00', fontWeight: '700' }}>
-                              ${orderDetails.total.toFixed(2)}
+                              ₹{orderDetails.total.toFixed(2)}
                             </h6>
                           </div>
                         </div>

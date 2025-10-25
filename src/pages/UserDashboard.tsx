@@ -26,7 +26,7 @@ const UserDashboard: React.FC = () => {
     city: 'New York',
     state: 'NY',
     zipCode: '10001',
-    country: 'United States'
+    country: 'India'
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',

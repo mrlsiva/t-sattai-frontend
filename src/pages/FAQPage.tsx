@@ -28,7 +28,7 @@ const FAQPage: React.FC = () => {
     {
       id: 3,
       question: "How long does shipping take?",
-      answer: "Shipping times vary by location and shipping method:\n\n• Standard shipping (5-7 business days): Free on orders over $50\n• Express shipping (2-3 business days): $9.99\n• Overnight shipping (1 business day): $19.99\n\nInternational shipping typically takes 7-14 business days.",
+      answer: "Shipping times vary by location and shipping method:\n\n• Standard shipping (5-7 business days): Free on orders over ₹2000\n• Express shipping (2-3 business days): ₹150\n• Same day delivery (select cities): ₹300\n\nDelivery is available across India.",
       category: "shipping"
     },
     {
