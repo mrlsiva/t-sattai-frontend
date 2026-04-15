@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { Product, Category } from '../types';
 import api from '../utils/api';
 import SearchFilters from '../components/Search/SearchFilters';
 import WishlistButton from '../components/Wishlist/WishlistButton';
+import '../styles/productDetail.css';
 
 const ProductListPage: React.FC = () => {
   const { user } = useAuth();
   const { addItem } = useCart();
-  const [searchParams] = useSearchParams();
   
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -258,10 +258,26 @@ const ProductListPage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
+            <div className="row g-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                <div key={i} className="col-lg-4 col-md-6">
+                  <div className="card border shadow-sm rounded-3 h-100">
+                    <div className="skeleton-loader" style={{ height: '250px' }}></div>
+                    <div className="card-body">
+                      <div className="skeleton-loader rounded mb-2" style={{ height: '20px', width: '80%' }}></div>
+                      <div className="skeleton-loader rounded mb-2" style={{ height: '15px', width: '60%' }}></div>
+                      <div className="skeleton-loader rounded mb-3" style={{ height: '15px', width: '40%' }}></div>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="skeleton-loader rounded" style={{ height: '25px', width: '50px' }}></div>
+                        <div className="skeleton-loader rounded" style={{ height: '20px', width: '80px' }}></div>
+                      </div>
+                    </div>
+                    <div className="card-footer bg-transparent border-0 pt-0 pb-3 px-3">
+                      <div className="skeleton-loader rounded" style={{ height: '38px' }}></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="text-center py-5">
@@ -332,7 +348,7 @@ const ProductListPage: React.FC = () => {
                         <div className="mt-auto">
                           <div className="d-flex justify-content-between align-items-center mb-2">
                             <span className="h5 mb-0 text-primary">
-                              ${product.price}
+                              ₹{product.price}
                             </span>
                             <small className="text-muted">
                               {product.stock > 0 ? (

@@ -21,6 +21,7 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
     if (user) {
       checkWishlistStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, user]);
 
   const checkWishlistStatus = async () => {
@@ -70,7 +71,7 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
       {loading ? (
         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       ) : (
-        <i className={`fas fa-heart ${isInWishlist ? '' : 'far'}`}></i>
+        <i className={isInWishlist ? 'fas fa-heart' : 'far fa-heart'}></i>
       )}
       {showText && (
         <span className="ms-2">

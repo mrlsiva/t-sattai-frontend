@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { AuthContextType, User, LoginData, RegisterData } from '../types';
+import { AuthContextType, User, RegisterData } from '../types';
 import { authApi, handleApiError } from '../services/api';
 
 interface AuthState {
@@ -179,10 +179,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'LOGIN_ERROR', payload: errorMessage });
       throw new Error(errorMessage);
     }
-  };
-
-  const clearError = () => {
-    dispatch({ type: 'CLEAR_ERROR' });
   };
 
   const contextValue: AuthContextType = {

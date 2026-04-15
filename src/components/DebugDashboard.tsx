@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Button, Alert, Badge, Accordion, Form, Modal } from 'react-bootstrap';
+import { Card, Button, Badge, Accordion, Modal } from 'react-bootstrap';
 import { stripeDebugger } from '../utils/stripeDebugger';
-import PaymentBackendTester, { runBackendTest, quickTestConnection, quickTestCreateIntent } from '../utils/paymentBackendTester';
+import PaymentBackendTester, { quickTestConnection, quickTestCreateIntent } from '../utils/paymentBackendTester';
 import { testAuthentication } from '../utils/authTester';
 import { useAuth } from '../contexts/AuthContext';
 

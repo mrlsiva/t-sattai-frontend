@@ -415,11 +415,12 @@ export const paymentApi = {
         }
     },
 
-    async confirmPayment(paymentIntentId: string, shippingAddress: any): Promise<ApiResponse<any>> {
+    async confirmPayment(paymentIntentId: string, shippingAddress: any, cartItems?: any[]): Promise<ApiResponse<any>> {
         try {
             const response = await api.post('/payments/confirm', {
                 payment_intent_id: paymentIntentId,
-                shipping_address: shippingAddress
+                shipping_address: shippingAddress,
+                ...(cartItems && cartItems.length > 0 ? { cart_items: cartItems } : {}),
             });
             return response.data;
         } catch (error) {

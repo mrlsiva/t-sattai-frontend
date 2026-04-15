@@ -135,29 +135,29 @@ const Footer: React.FC = () => {
               </h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <a href="#" className="text-white text-decoration-none small hover-primary">
+                  <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">
                     <i className="fas fa-shipping-fast me-2"></i>Track Order
-                  </a>
+                  </button>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white text-decoration-none small hover-primary">
+                  <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">
                     <i className="fas fa-undo me-2"></i>Returns
-                  </a>
+                  </button>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white text-decoration-none small hover-primary">
+                  <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">
                     <i className="fas fa-info me-2"></i>Shipping Info
-                  </a>
+                  </button>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white text-decoration-none small hover-primary">
+                  <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">
                     <i className="fas fa-ruler me-2"></i>Size Guide
-                  </a>
+                  </button>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white text-decoration-none small hover-primary">
+                  <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">
                     <i className="fas fa-life-ring me-2"></i>Support
-                  </a>
+                  </button>
                 </li>
               </ul>
             </Col>
@@ -262,11 +262,11 @@ const Footer: React.FC = () => {
             </Col>
             <Col md={4} className="text-md-end">
               <div className="d-flex justify-content-md-end gap-3 flex-wrap">
-                <a href="#" className="text-white text-decoration-none small hover-primary">Privacy</a>
+                <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">Privacy</button>
                 <span className="text-white">|</span>
-                <a href="#" className="text-white text-decoration-none small hover-primary">Terms</a>
+                <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">Terms</button>
                 <span className="text-white">|</span>
-                <a href="#" className="text-white text-decoration-none small hover-primary">Cookies</a>
+                <button onClick={() => {}} className="btn btn-link text-white text-decoration-none small hover-primary p-0">Cookies</button>
               </div>
             </Col>
           </Row>

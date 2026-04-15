@@ -4,7 +4,7 @@ import {
   Pagination, InputGroup, Dropdown, Spinner, Alert 
 } from 'react-bootstrap';
 import { Product } from '../../types';
-import { productsApi, handleApiError } from '../../services/api';
+import { productsApi } from '../../services/api';
 import api from '../../utils/api';
 
 const AdminProducts: React.FC = () => {
@@ -52,6 +52,7 @@ const AdminProducts: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const loadProducts = async () => {
@@ -600,15 +601,15 @@ const AdminProducts: React.FC = () => {
                         <div>
                           {product.sale_price && (
                             <>
-                              <span className="fw-bold">${product.sale_price}</span>
+                              <span className="fw-bold">₹{product.sale_price}</span>
                               <br />
                               <small className="text-muted text-decoration-line-through">
-                                ${product.price}
+                                ₹{product.price}
                               </small>
                             </>
                           )}
                           {!product.sale_price && (
-                            <span className="fw-bold">${product.price}</span>
+                            <span className="fw-bold">₹{product.price}</span>
                           )}
                         </div>
                       </td>

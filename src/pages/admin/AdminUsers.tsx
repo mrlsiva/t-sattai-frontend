@@ -215,20 +215,24 @@ const AdminUsers: React.FC = () => {
   // useEffect hooks
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     fetchUserStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, roleFilter, statusFilter]);
 
   useEffect(() => {
     if (users.length > 0) {
       calculateStatsFromUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
   const getStatusColor = (isActive: boolean) => {

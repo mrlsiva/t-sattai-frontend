@@ -92,6 +92,7 @@ const CheckoutPage: React.FC = () => {
     if (shippingAddress.city && shippingAddress.state && shippingAddress.postal_code && !apiCalculationFailed) {
       calculateCheckoutTotals();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shippingAddress, selectedShippingMethod, items, apiCalculationFailed]);
 
   const calculateCheckoutTotals = async () => {
@@ -296,6 +297,7 @@ const CheckoutPage: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAddressChange = (field: keyof ShippingAddress, value: string) => {
     let processedValue = value;
     
@@ -352,6 +354,12 @@ const CheckoutPage: React.FC = () => {
       const paymentData = {
         amount: Math.round(grandTotal * 100) / 100, // Ensure 2 decimal places
         currency: 'inr', // Indian Rupees
+        // Add cart items for backend
+        cart_items: items.map(item => ({
+          product_id: parseInt(item.product.id.toString()),
+          quantity: item.quantity,
+          price: parseFloat(item.product.sale_price || item.product.price)
+        })),
         // Add additional data that backend might need
         shipping_address: {
           name: shippingAddress.name,
@@ -363,13 +371,14 @@ const CheckoutPage: React.FC = () => {
           country: 'IN' // India only
         },
         metadata: {
-          cart_items: items.length,
+          cart_items_count: items.length,
           user_id: user?.id || 'guest'
         }
       };
 
       console.log('Creating payment intent with data:', paymentData);
-      console.log('Current cart items:', items.length);
+      console.log('Current cart items:', items);
+      console.log('Cart items count:', items.length);
       console.log('Shipping address valid:', isFormValid());
 
       let result;
@@ -381,10 +390,15 @@ const CheckoutPage: React.FC = () => {
         if (simpleError.response?.status === 404) {
           console.log('Simple endpoint not available, using regular endpoint');
           
-          // Try with minimal data for regular endpoint
+          // Try with minimal data for regular endpoint - include cart items
           const minimalPaymentData = {
             amount: Math.round(grandTotal * 100) / 100,
-            currency: 'inr' // Indian Rupees
+            currency: 'inr', // Indian Rupees
+            cart_items: items.map(item => ({
+              product_id: parseInt(item.product.id.toString()),
+              quantity: item.quantity,
+              price: parseFloat(item.product.sale_price || item.product.price)
+            }))
           };
           
           result = await paymentApi.createPaymentIntent(minimalPaymentData);
@@ -429,6 +443,9 @@ const CheckoutPage: React.FC = () => {
   };
 
   const handlePaymentSuccess = (orderNumber: string) => {
+    // Reset client secret to prevent re-use
+    setClientSecret('');
+    
     // Prepare order details for confirmation page
     const orderData = {
       orderNumber,
@@ -884,6 +901,11 @@ const CheckoutPage: React.FC = () => {
                         <CheckoutForm
                           clientSecret={clientSecret}
                           shippingAddress={shippingAddress}
+                          cartItems={items.map(item => ({
+                            product_id: parseInt(item.product.id.toString()),
+                            quantity: item.quantity,
+                            price: parseFloat(item.product.sale_price || item.product.price),
+                          }))}
                           onSuccess={handlePaymentSuccess}
                         />
                       </Elements>

@@ -5,7 +5,6 @@ import { Product, Category } from '../types';
 import { productsApi, categoriesApi, handleApiError } from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
-import config from '../config';
 
 const HomePage: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -35,30 +34,30 @@ const HomePage: React.FC = () => {
         // Categories failed but continue loading products
       }
       
-      // Load featured products with better error handling
+      // Load featured products with fallback to all products
       try {
         const productsResponse = await productsApi.getFeatured();
-        
-        if (productsResponse.success && productsResponse.data) {
-          setFeaturedProducts(Array.isArray(productsResponse.data) ? productsResponse.data : []);
+
+        if (productsResponse.success && productsResponse.data && Array.isArray(productsResponse.data) && productsResponse.data.length > 0) {
+          setFeaturedProducts(productsResponse.data);
         } else {
-          // Fallback to direct API call
-          try {
-            const directResponse = await fetch(`${config.api.baseURL}/products/featured`);
-            const directData = await directResponse.json();
-            
-            if (directData.success && directData.data) {
-              setFeaturedProducts(Array.isArray(directData.data) ? directData.data : []);
-            } else {
-              setFeaturedProducts([]);
-            }
-          } catch (directError) {
+          throw new Error('No featured products');
+        }
+      } catch (featuredError) {
+        // Fallback: load all products and use first 8 as featured
+        try {
+          const allProductsResponse = await productsApi.getAll();
+          if (allProductsResponse.success && allProductsResponse.data) {
+            const products = Array.isArray(allProductsResponse.data)
+              ? allProductsResponse.data
+              : (allProductsResponse.data as any).data || [];
+            setFeaturedProducts(products.slice(0, 8));
+          } else {
             setFeaturedProducts([]);
           }
+        } catch (allError) {
+          setFeaturedProducts([]);
         }
-      } catch (productsError) {
-        setError('Failed to load featured products');
-        setFeaturedProducts([]);
       }
     } catch (error) {
       setError(handleApiError(error));
@@ -275,10 +274,11 @@ const HomePage: React.FC = () => {
                 <Col key={product.id} lg={3} md={4} sm={6} className="mb-4">
                   <Card className="h-100 shadow-sm product-card">
                     <div className="position-relative">
-                      <Card.Img 
-                        variant="top" 
-                        src={product.images[0] || '/placeholder-image.jpg'} 
+                      <Card.Img
+                        variant="top"
+                        src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder-image.jpg'}
                         style={{ height: '200px', objectFit: 'cover' }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-image.jpg'; }}
                       />
                       {product.sale_price && (
                         <Badge 
@@ -326,13 +326,13 @@ const HomePage: React.FC = () => {
                       <div className="mb-3">
                         {product.sale_price ? (
                           <>
-                            <span className="fw-bold text-primary">${product.sale_price}</span>
+                            <span className="fw-bold text-primary">₹{product.sale_price}</span>
                             <span className="text-muted text-decoration-line-through ms-2">
-                              ${product.price}
+                              ₹{product.price}
                             </span>
                           </>
                         ) : (
-                          <span className="fw-bold text-primary">${product.price}</span>
+                          <span className="fw-bold text-primary">₹{product.price}</span>
                         )}
                       </div>
                       

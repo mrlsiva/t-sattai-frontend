@@ -4,7 +4,7 @@ import {
   Alert, InputGroup, Spinner 
 } from 'react-bootstrap';
 import { Category } from '../../types';
-import { categoriesApi, handleApiError } from '../../services/api';
+import { categoriesApi } from '../../services/api';
 import api from '../../utils/api';
 
 const AdminCategories: React.FC = () => {
@@ -26,6 +26,7 @@ const AdminCategories: React.FC = () => {
 
   useEffect(() => {
     loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]); // Reload when search term changes
 
   const loadCategories = async () => {

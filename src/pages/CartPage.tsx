@@ -5,7 +5,7 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const CartPage: React.FC = () => {
-  const { items, total, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, total, updateQuantity, removeItem } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -44,10 +44,11 @@ const CartPage: React.FC = () => {
                       <Card.Body>
                         <Row className="align-items-center">
                           <Col md={2}>
-                            <img 
-                              src={item.product.images[0]} 
+                            <img
+                              src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/placeholder.png'}
                               alt={item.product.name}
                               className="img-fluid rounded"
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }}
                             />
                           </Col>
                           <Col md={4}>
@@ -74,7 +75,7 @@ const CartPage: React.FC = () => {
                             </div>
                           </Col>
                           <Col md={2}>
-                            <span className="fw-bold">${(parseFloat(item.product.sale_price || item.product.price) * item.quantity).toFixed(2)}</span>
+                            <span className="fw-bold">₹{(parseFloat(item.product.sale_price || item.product.price) * item.quantity).toFixed(2)}</span>
                           </Col>
                           <Col md={2}>
                             <Button
@@ -99,16 +100,16 @@ const CartPage: React.FC = () => {
                     <Card.Body>
                       <div className="d-flex justify-content-between mb-2">
                         <span>Subtotal:</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>₹{total.toFixed(2)}</span>
                       </div>
                       <div className="d-flex justify-content-between mb-2">
                         <span>Shipping:</span>
-                        <span>FREE</span>
+                        <span className="text-muted">Calculated at checkout</span>
                       </div>
                       <hr />
                       <div className="d-flex justify-content-between fw-bold">
-                        <span>Total:</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>Subtotal:</span>
+                        <span>₹{total.toFixed(2)}</span>
                       </div>
                       <Button 
                         variant="primary" 

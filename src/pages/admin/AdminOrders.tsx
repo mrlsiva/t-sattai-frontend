@@ -101,40 +101,29 @@ const AdminOrders: React.FC = () => {
 
   // Calculate stats from current orders if API fails
   const calculateStatsFromOrders = () => {
-    const calculatedStats = orders.reduce(
+    const calculatedStats = (orders as any[]).reduce(
       (acc, order) => {
         acc.total += 1;
-        acc.totalValue += order.total;
-        
-        switch (order.orderStatus) {
-          case 'pending':
-            acc.pending += 1;
-            break;
-          case 'processing':
-            acc.processing += 1;
-            break;
-          case 'shipped':
-            acc.shipped += 1;
-            break;
-          case 'delivered':
-            acc.delivered += 1;
-            break;
-          case 'cancelled':
-            acc.cancelled += 1;
-            break;
+        acc.totalValue += parseFloat(String(order.total || 0));
+        const status = (order.orderStatus || order.order_status || '').toLowerCase();
+        switch (status) {
+          case 'pending':    acc.pending += 1; break;
+          case 'processing': acc.processing += 1; break;
+          case 'shipped':    acc.shipped += 1; break;
+          case 'delivered':  acc.delivered += 1; break;
+          case 'cancelled':  acc.cancelled += 1; break;
         }
-        
         return acc;
       },
       { total: 0, pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0, totalValue: 0 }
     );
-    
     setStats(calculatedStats);
   };
 
   // Load data on component mount
   useEffect(() => {
     fetchOrderStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced search
@@ -144,6 +133,7 @@ const AdminOrders: React.FC = () => {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter]);
 
   // Recalculate stats when orders change
@@ -151,9 +141,36 @@ const AdminOrders: React.FC = () => {
     if (orders.length > 0) {
       calculateStatsFromOrders();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders]);
 
-  const getStatusColor = (status: Order['orderStatus']) => {
+  // Helper: get field supporting both camelCase and snake_case API responses
+  const getField = (order: any, camel: string, snake: string, fallback: any = '') => {
+    return order[camel] ?? order[snake] ?? fallback;
+  };
+
+  const getOrderStatus = (order: any): string =>
+    (getField(order, 'orderStatus', 'order_status', 'pending') as string).toLowerCase();
+
+  const getPaymentStatus = (order: any): string =>
+    (getField(order, 'paymentStatus', 'payment_status', 'pending') as string).toLowerCase();
+
+  const getCreatedAt = (order: any): string =>
+    getField(order, 'createdAt', 'created_at', '');
+
+  const getShippingAddress = (order: any): any =>
+    getField(order, 'shippingAddress', 'shipping_address', null);
+
+  const getBillingAddress = (order: any): any =>
+    getField(order, 'billingAddress', 'billing_address', null);
+
+  const getShippingCost = (order: any): number =>
+    parseFloat(getField(order, 'shippingCost', 'shipping_cost', 0));
+
+  const getOrderItems = (order: any): any[] =>
+    getField(order, 'items', 'order_items', []);
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'warning';
       case 'confirmed': return 'info';
@@ -165,18 +182,21 @@ const AdminOrders: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: Order['orderStatus']) => {
+  const getStatusText = (status: string) => {
+    if (!status) return 'Unknown';
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredOrders = orders.filter((order: any) => {
+    const orderId = String(order.id || order.order_number || '').toLowerCase();
+    const matchesSearch =
+      orderId.includes(searchTerm.toLowerCase()) ||
       order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || order.orderStatus === statusFilter;
-    
+
+    const status = getOrderStatus(order);
+    const matchesStatus = statusFilter === 'all' || status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -343,9 +363,9 @@ const AdminOrders: React.FC = () => {
           <Card className="border-0 shadow-sm">
             <Card.Body className="text-center">
               <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style={{width: '50px', height: '50px'}}>
-                <i className="bi bi-currency-dollar text-success"></i>
+                <i className="bi bi-cash text-success"></i>
               </div>
-              <h4 className="fw-bold">${stats.totalValue.toFixed(0)}</h4>
+              <h4 className="fw-bold">₹{stats.totalValue.toFixed(0)}</h4>
               <p className="text-muted small mb-0">Total Value</p>
             </Card.Body>
           </Card>
@@ -410,28 +430,28 @@ const AdminOrders: React.FC = () => {
                   </td>
                 </tr>
               ) : filteredOrders.length > 0 ? (
-                filteredOrders.map(order => (
+                filteredOrders.map((order: any) => (
                   <tr key={order.id}>
-                    <td className="fw-bold">{order.id}</td>
+                    <td className="fw-bold">{order.order_number || order.id}</td>
                     <td>
                       <div>
                         <div className="fw-semibold">{order.user?.name || 'Unknown'}</div>
                         <small className="text-muted">{order.user?.email || 'N/A'}</small>
                       </div>
                     </td>
-                    <td>{formatDate(order.createdAt)}</td>
+                    <td>{getCreatedAt(order) ? formatDate(getCreatedAt(order)) : 'N/A'}</td>
                     <td>
                       <span className="text-muted small">
-                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                        {getOrderItems(order).length} item{getOrderItems(order).length !== 1 ? 's' : ''}
                       </span>
                     </td>
                     <td>
                       <Form.Select
                         size="sm"
-                        value={order.orderStatus}
-                        onChange={(e) => handleStatusUpdate(order.id, e.target.value as Order['orderStatus'])}
-                        className={`border-0 bg-${getStatusColor(order.orderStatus)} text-white fw-bold`}
-                        disabled={updatingOrderId === order.id}
+                        value={getOrderStatus(order)}
+                        onChange={(e) => handleStatusUpdate(String(order.id), e.target.value as Order['orderStatus'])}
+                        className={`border-0 bg-${getStatusColor(getOrderStatus(order))} text-white fw-bold`}
+                        disabled={updatingOrderId === String(order.id)}
                       >
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
@@ -440,11 +460,11 @@ const AdminOrders: React.FC = () => {
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                       </Form.Select>
-                      {updatingOrderId === order.id && (
+                      {updatingOrderId === String(order.id) && (
                         <Spinner animation="border" size="sm" className="ms-2" />
                       )}
                     </td>
-                    <td className="fw-bold">${order.total.toFixed(2)}</td>
+                    <td className="fw-bold">₹{parseFloat(String(order.total || 0)).toFixed(2)}</td>
                     <td>
                       <Button
                         variant="outline-primary"
@@ -475,113 +495,126 @@ const AdminOrders: React.FC = () => {
       {/* Order Details Modal */}
       <Modal show={showOrderModal} onHide={() => setShowOrderModal(false)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Order Details - {selectedOrder?.id}</Modal.Title>
+          <Modal.Title>
+            Order Details — {(selectedOrder as any)?.order_number || selectedOrder?.id}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedOrder && (
-            <div>
-              <Row className="mb-4">
-                <Col md={6}>
-                  <h6 className="fw-bold">Customer Information</h6>
-                  <p className="mb-1"><strong>Name:</strong> {selectedOrder.user?.name || 'N/A'}</p>
-                  <p className="mb-1"><strong>Email:</strong> {selectedOrder.user?.email || 'N/A'}</p>
-                  <p className="mb-1"><strong>Payment:</strong> {selectedOrder.paymentMethod}</p>
-                  <p className="mb-1"><strong>Payment Status:</strong>{' '}
-                    <Badge bg={selectedOrder.paymentStatus === 'completed' ? 'success' : 
-                               selectedOrder.paymentStatus === 'pending' ? 'warning' :
-                               selectedOrder.paymentStatus === 'failed' ? 'danger' : 'info'}>
-                      {selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}
-                    </Badge>
-                  </p>
-                </Col>
-                <Col md={6}>
-                  <h6 className="fw-bold">Order Information</h6>
-                  <p className="mb-1"><strong>Date:</strong> {formatDate(selectedOrder.createdAt)}</p>
-                  <p className="mb-1">
-                    <strong>Status:</strong>{' '}
-                    <Badge bg={getStatusColor(selectedOrder.orderStatus)}>
-                      {getStatusText(selectedOrder.orderStatus)}
-                    </Badge>
-                  </p>
-                  <p className="mb-1"><strong>Subtotal:</strong> ${selectedOrder.subtotal.toFixed(2)}</p>
-                  <p className="mb-1"><strong>Shipping:</strong> ${selectedOrder.shippingCost.toFixed(2)}</p>
-                  <p className="mb-1"><strong>Tax:</strong> ${selectedOrder.tax.toFixed(2)}</p>
-                  {selectedOrder.discount > 0 && (
-                    <p className="mb-1"><strong>Discount:</strong> -${selectedOrder.discount.toFixed(2)}</p>
-                  )}
-                  <p className="mb-1"><strong>Total:</strong> <strong>${selectedOrder.total.toFixed(2)}</strong></p>
-                  {selectedOrder.trackingNumber && (
-                    <p className="mb-1"><strong>Tracking:</strong> {selectedOrder.trackingNumber}</p>
-                  )}
-                </Col>
-              </Row>
+          {selectedOrder && (() => {
+            const o: any = selectedOrder;
+            const orderStatus   = getOrderStatus(o);
+            const payStatus     = getPaymentStatus(o);
+            const createdAt     = getCreatedAt(o);
+            const shippingAddr  = getShippingAddress(o);
+            const billingAddr   = getBillingAddress(o);
+            const shippingCost  = getShippingCost(o);
+            const subtotal      = parseFloat(String(o.subtotal ?? 0));
+            const tax           = parseFloat(String(o.tax ?? 0));
+            const discount      = parseFloat(String(o.discount ?? 0));
+            const total         = parseFloat(String(o.total ?? 0));
+            const trackingNo    = o.trackingNumber || o.tracking_number;
+            const paymentMethod = o.paymentMethod || o.payment_method || 'N/A';
+            const items         = getOrderItems(o);
 
-              <h6 className="fw-bold">Shipping Address</h6>
-              <p className="mb-4">{formatAddress(selectedOrder.shippingAddress)}</p>
+            return (
+              <div>
+                <Row className="mb-4">
+                  <Col md={6}>
+                    <h6 className="fw-bold">Customer Information</h6>
+                    <p className="mb-1"><strong>Name:</strong> {o.user?.name || 'N/A'}</p>
+                    <p className="mb-1"><strong>Email:</strong> {o.user?.email || 'N/A'}</p>
+                    <p className="mb-1"><strong>Payment:</strong> {paymentMethod}</p>
+                    <p className="mb-1"><strong>Payment Status:</strong>{' '}
+                      <Badge bg={payStatus === 'completed' || payStatus === 'paid' ? 'success' :
+                                 payStatus === 'pending' ? 'warning' :
+                                 payStatus === 'failed' ? 'danger' : 'info'}>
+                        {getStatusText(payStatus)}
+                      </Badge>
+                    </p>
+                  </Col>
+                  <Col md={6}>
+                    <h6 className="fw-bold">Order Information</h6>
+                    <p className="mb-1"><strong>Date:</strong> {createdAt ? formatDate(createdAt) : 'N/A'}</p>
+                    <p className="mb-1">
+                      <strong>Status:</strong>{' '}
+                      <Badge bg={getStatusColor(orderStatus)}>
+                        {getStatusText(orderStatus)}
+                      </Badge>
+                    </p>
+                    <p className="mb-1"><strong>Subtotal:</strong> ₹{subtotal.toFixed(2)}</p>
+                    <p className="mb-1"><strong>Shipping:</strong> ₹{shippingCost.toFixed(2)}</p>
+                    <p className="mb-1"><strong>Tax:</strong> ₹{tax.toFixed(2)}</p>
+                    {discount > 0 && (
+                      <p className="mb-1"><strong>Discount:</strong> -₹{discount.toFixed(2)}</p>
+                    )}
+                    <p className="mb-1"><strong>Total:</strong> <strong>₹{total.toFixed(2)}</strong></p>
+                    {trackingNo && (
+                      <p className="mb-1"><strong>Tracking:</strong> {trackingNo}</p>
+                    )}
+                  </Col>
+                </Row>
 
-              {selectedOrder.billingAddress && (
-                <>
-                  <h6 className="fw-bold">Billing Address</h6>
-                  <p className="mb-4">{formatAddress(selectedOrder.billingAddress)}</p>
-                </>
-              )}
+                <h6 className="fw-bold">Shipping Address</h6>
+                <p className="mb-4">{formatAddress(shippingAddr)}</p>
 
-              <h6 className="fw-bold">Order Items</h6>
-              <Table responsive className="mb-0">
-                <thead className="bg-light">
-                  <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.items.map(item => (
-                    <tr key={item.id}>
-                      <td>
-                        <div>
-                          <div className="fw-semibold">{item.product?.name || 'Unknown Product'}</div>
-                          {item.variant && (
-                            <small className="text-muted">
-                              Variant: {item.variant.name || 'N/A'}
-                            </small>
-                          )}
-                        </div>
-                      </td>
-                      <td>${item.price.toFixed(2)}</td>
-                      <td>{item.quantity}</td>
-                      <td className="fw-bold">${(item.price * item.quantity).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-light">
-                  <tr>
-                    <th colSpan={3}>Subtotal</th>
-                    <th>${selectedOrder.subtotal.toFixed(2)}</th>
-                  </tr>
-                  <tr>
-                    <th colSpan={3}>Shipping</th>
-                    <th>${selectedOrder.shippingCost.toFixed(2)}</th>
-                  </tr>
-                  <tr>
-                    <th colSpan={3}>Tax</th>
-                    <th>${selectedOrder.tax.toFixed(2)}</th>
-                  </tr>
-                  {selectedOrder.discount > 0 && (
+                {billingAddr && (
+                  <>
+                    <h6 className="fw-bold">Billing Address</h6>
+                    <p className="mb-4">{formatAddress(billingAddr)}</p>
+                  </>
+                )}
+
+                <h6 className="fw-bold">Order Items</h6>
+                <Table responsive className="mb-0">
+                  <thead className="bg-light">
                     <tr>
-                      <th colSpan={3}>Discount</th>
-                      <th>-${selectedOrder.discount.toFixed(2)}</th>
+                      <th>Product</th>
+                      <th>Price</th>
+                      <th>Quantity</th>
+                      <th>Total</th>
                     </tr>
-                  )}
-                  <tr className="table-dark">
-                    <th colSpan={3}>Total</th>
-                    <th>${selectedOrder.total.toFixed(2)}</th>
-                  </tr>
-                </tfoot>
-              </Table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {items.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted">No items found</td>
+                      </tr>
+                    ) : items.map((item: any, idx: number) => {
+                      const itemPrice = parseFloat(String(item.price ?? 0));
+                      const productName = item.product?.name || item.name || 'Unknown Product';
+                      return (
+                        <tr key={item.id ?? idx}>
+                          <td>
+                            <div className="fw-semibold">{productName}</div>
+                            {(item.variant || item.product_variant) && (
+                              <small className="text-muted">
+                                Variant: {(item.variant || item.product_variant)?.name || 'N/A'}
+                              </small>
+                            )}
+                          </td>
+                          <td>₹{itemPrice.toFixed(2)}</td>
+                          <td>{item.quantity}</td>
+                          <td className="fw-bold">₹{(itemPrice * item.quantity).toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="bg-light">
+                    <tr><th colSpan={3}>Subtotal</th><th>₹{subtotal.toFixed(2)}</th></tr>
+                    <tr><th colSpan={3}>Shipping</th><th>₹{shippingCost.toFixed(2)}</th></tr>
+                    <tr><th colSpan={3}>Tax</th><th>₹{tax.toFixed(2)}</th></tr>
+                    {discount > 0 && (
+                      <tr><th colSpan={3}>Discount</th><th>-₹{discount.toFixed(2)}</th></tr>
+                    )}
+                    <tr className="table-dark">
+                      <th colSpan={3}>Total</th>
+                      <th>₹{total.toFixed(2)}</th>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </div>
+            );
+          })()}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowOrderModal(false)}>

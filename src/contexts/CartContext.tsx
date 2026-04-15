@@ -68,17 +68,20 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return {
         ...state,
         items: updatedItems,
+        loading: false,
       };
     }
     case 'REMOVE_ITEM':
       return {
         ...state,
         items: state.items.filter(item => item.id !== action.payload),
+        loading: false,
       };
     case 'CLEAR_CART':
       return {
         ...state,
         items: [],
+        loading: false,
       };
     case 'SET_ERROR':
       return {

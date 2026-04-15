@@ -80,6 +80,7 @@ const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // useCallback dependency array
 
   useEffect(() => {
@@ -220,16 +221,16 @@ const AdminDashboard: React.FC = () => {
               <div className="d-flex align-items-center">
                 <div className="flex-shrink-0">
                   <div className="p-3 bg-warning bg-opacity-10 rounded">
-                    <i className="bi bi-currency-dollar text-warning fs-4"></i>
+                    <i className="bi bi-cash text-warning fs-4"></i>
                   </div>
                 </div>
                 <div className="flex-grow-1 ms-3">
-                  <div className="fw-bold fs-4">${(stats?.totalRevenue ?? 0).toLocaleString()}</div>
+                  <div className="fw-bold fs-4">₹{(stats?.totalRevenue ?? 0).toLocaleString()}</div>
                   <div className="text-muted small">Total Revenue</div>
                   {stats && (
                     <div className="text-warning small">
                       <i className="bi bi-calendar-day me-1"></i>
-                      ${stats.todayRevenue.toLocaleString()} today
+                      ₹{stats.todayRevenue.toLocaleString()} today
                     </div>
                   )}
                 </div>
