@@ -3,6 +3,7 @@ import { Container, Row, Col, Carousel, Card, Button, Badge } from 'react-bootst
 import { Link, useNavigate } from 'react-router-dom';
 import { Product, Category } from '../types';
 import { productsApi, categoriesApi, handleApiError } from '../services/api';
+import { resolveCategoryImage } from '../utils/imageHelpers';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 
@@ -222,20 +223,33 @@ const HomePage: React.FC = () => {
             <Row>
               {categories.slice(0, 6).map((category) => (
                 <Col key={category.id} lg={2} md={4} sm={6} className="mb-4">
-                  <Card 
-                    as={Link} 
+                  <Card
+                    as={Link}
                     to={`/products/category/${category.id}`}
-                    className="h-100 text-decoration-none border-0 shadow-sm category-card"
+                    className="h-100 text-decoration-none border-0 shadow-sm category-card overflow-hidden"
                     style={{ transition: 'transform 0.3s ease' }}
                   >
-                    <Card.Body className="text-center p-4">
-                      <div 
-                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
-                        style={{ width: '60px', height: '60px' }}
-                      >
-                        <i className="bi bi-grid text-primary fs-3"></i>
+                    {resolveCategoryImage(category.image, category.display_image) ? (
+                      <div style={{ height: '120px', overflow: 'hidden' }}>
+                        <img
+                          src={resolveCategoryImage(category.image, category.display_image)!}
+                          alt={category.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
                       </div>
-                      <Card.Title className="small fw-semibold text-dark">{category.name}</Card.Title>
+                    ) : (
+                      <div
+                        className="bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                        style={{ height: '120px' }}
+                      >
+                        <i className="bi bi-grid text-primary" style={{ fontSize: '2.5rem' }}></i>
+                      </div>
+                    )}
+                    <Card.Body className="text-center py-2 px-3">
+                      <Card.Title className="small fw-semibold text-dark mb-0">{category.name}</Card.Title>
                     </Card.Body>
                   </Card>
                 </Col>

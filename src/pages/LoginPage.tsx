@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -9,6 +9,8 @@ const LoginPage: React.FC = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+  const resetSuccess = searchParams.get('reset') === 'success';
 
   const { login, loading, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +57,12 @@ const LoginPage: React.FC = () => {
                 <p className="text-muted">Sign in to your account</p>
               </div>
 
+              {resetSuccess && (
+                <Alert variant="success">
+                  Password reset successful! You can now sign in with your new password.
+                </Alert>
+              )}
+
               {error && (
                 <Alert variant="danger" dismissible onClose={() => setError('')}>
                   {error}
@@ -76,7 +84,10 @@ const LoginPage: React.FC = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Password</Form.Label>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <Form.Label className="mb-0">Password</Form.Label>
+                    <Link to="/forgot-password" className="small">Forgot password?</Link>
+                  </div>
                   <Form.Control
                     type="password"
                     name="password"

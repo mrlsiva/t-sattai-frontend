@@ -69,7 +69,8 @@ export interface Category {
     name: string;
     slug: string;
     description?: string;
-    image?: string;
+    image?: string;          // filename only  e.g. "1234567890_abc.webp"
+    display_image?: string;  // full URL       e.g. "http://localhost/storage/categories/..."
     parent_id?: number;
     sort_order: number;
     is_active: boolean;

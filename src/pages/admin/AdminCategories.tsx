@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Row, Col, Card, Table, Button, Badge, Modal, Form, 
-  Alert, InputGroup, Spinner 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Row, Col, Card, Table, Button, Badge, Modal, Form,
+  Alert, InputGroup, Spinner, Image
 } from 'react-bootstrap';
 import { Category } from '../../types';
 import { categoriesApi } from '../../services/api';
 import api from '../../utils/api';
+import { resolveCategoryImage } from '../../utils/imageHelpers';
 
 const AdminCategories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,6 +24,12 @@ const AdminCategories: React.FC = () => {
     sort_order: '',
     is_active: true,
   });
+
+  // Image state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadCategories();
@@ -136,6 +143,20 @@ const AdminCategories: React.FC = () => {
     ];
   };
 
+  const resetImageState = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setExistingImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleAddCategory = () => {
     setEditingCategory(null);
     setFormData({
@@ -145,6 +166,7 @@ const AdminCategories: React.FC = () => {
       sort_order: '',
       is_active: true,
     });
+    resetImageState();
     setShowModal(true);
   };
 
@@ -157,6 +179,8 @@ const AdminCategories: React.FC = () => {
       sort_order: category.sort_order.toString(),
       is_active: category.is_active,
     });
+    resetImageState();
+    setExistingImage(resolveCategoryImage(category.image, category.display_image));
     setShowModal(true);
   };
 
@@ -177,17 +201,37 @@ const AdminCategories: React.FC = () => {
     }));
   };
 
+  const buildCategoryPayload = () => {
+    if (!imageFile) return formData;
+    const data = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      // Laravel boolean validation requires "1"/"0", not "true"/"false"
+      if (typeof value === 'boolean') {
+        data.append(key, value ? '1' : '0');
+      } else {
+        data.append(key, String(value));
+      }
+    });
+    data.append('image', imageFile);
+    return data;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
+    const useMultipart = imageFile !== null;
+    const payload = buildCategoryPayload();
+
     try {
       console.log('AdminCategories: Submitting category:', formData);
-      
+
       if (editingCategory) {
         // Update existing category
         try {
-          const response = await api.put(`/admin/categories/${editingCategory.id}`, formData);
+          const response = useMultipart
+            ? await api.post(`/admin/categories/${editingCategory.id}?_method=PUT`, payload)
+            : await api.put(`/admin/categories/${editingCategory.id}`, payload);
           
           if (response.data?.success) {
             console.log('AdminCategories: Category updated successfully via API');
@@ -231,7 +275,7 @@ const AdminCategories: React.FC = () => {
       } else {
         // Create new category
         try {
-          const response = await api.post('/admin/categories', formData);
+          const response = await api.post('/admin/categories', payload);
           
           if (response.data?.success) {
             console.log('AdminCategories: Category created successfully via API:', response.data.data);
@@ -403,6 +447,7 @@ const AdminCategories: React.FC = () => {
             <Table responsive hover className="mb-0">
               <thead className="table-light">
                 <tr>
+                  <th>Image</th>
                   <th>Name</th>
                   <th>Slug</th>
                   <th>Description</th>
@@ -418,6 +463,24 @@ const AdminCategories: React.FC = () => {
                     .sort((a, b) => a.sort_order - b.sort_order)
                     .map((category) => (
                     <tr key={category.id}>
+                      <td>
+                        {resolveCategoryImage(category.image, category.display_image) ? (
+                          <img
+                            src={resolveCategoryImage(category.image, category.display_image)!}
+                            alt={category.name}
+                            width={48}
+                            height={48}
+                            style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }}
+                          />
+                        ) : (
+                          <div
+                            className="d-flex align-items-center justify-content-center bg-light rounded"
+                            style={{ width: 48, height: 48 }}
+                          >
+                            <i className="bi bi-image text-muted"></i>
+                          </div>
+                        )}
+                      </td>
                       <td>
                         <div className="fw-bold">{category.name}</div>
                       </td>
@@ -458,7 +521,7 @@ const AdminCategories: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-4">
+                    <td colSpan={8} className="text-center py-4">
                       <div className="text-muted">
                         <i className="bi bi-folder2-open fs-1 d-block mb-2"></i>
                         {searchTerm ? 'No categories match your search' : 'No categories found'}
@@ -553,6 +616,83 @@ const AdminCategories: React.FC = () => {
                 </Form.Group>
               </Col>
             </Row>
+            {/* Category Image */}
+            <Form.Group className="mb-3">
+              <Form.Label>Category Image</Form.Label>
+
+              {/* Current image (edit mode) */}
+              {existingImage && !imagePreview && (
+                <div className="mb-2 d-flex align-items-center gap-3">
+                  <Image
+                    src={existingImage}
+                    alt="Current"
+                    width={80}
+                    height={80}
+                    style={{ objectFit: 'cover', borderRadius: '8px', border: '1px solid #dee2e6' }}
+                  />
+                  <div>
+                    <small className="text-muted d-block">Current image</small>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      className="mt-1"
+                      type="button"
+                      onClick={() => setExistingImage(null)}
+                    >
+                      <i className="bi bi-trash me-1"></i>Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* New image preview */}
+              {imagePreview && (
+                <div className="mb-2 d-flex align-items-center gap-3">
+                  <Image
+                    src={imagePreview}
+                    alt="Preview"
+                    width={80}
+                    height={80}
+                    style={{ objectFit: 'cover', borderRadius: '8px', border: '2px solid #0d6efd' }}
+                  />
+                  <div>
+                    <small className="text-muted d-block">New image</small>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      className="mt-1"
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                    >
+                      <i className="bi bi-x-circle me-1"></i>Clear
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload area */}
+              <div
+                className="border border-2 border-dashed rounded p-3 text-center"
+                style={{ cursor: 'pointer', borderColor: '#0d6efd44' }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <i className="bi bi-cloud-upload fs-3 text-primary d-block mb-1"></i>
+                <small className="text-muted">
+                  Click to upload category image (JPG, PNG, WebP)
+                </small>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="d-none"
+                  onChange={handleImageChange}
+                />
+              </div>
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowModal(false)}>

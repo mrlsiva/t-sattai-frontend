@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { Product, Category } from '../types';
 import api from '../utils/api';
+import { resolveCategoryImage } from '../utils/imageHelpers';
 import SearchFilters from '../components/Search/SearchFilters';
 import WishlistButton from '../components/Wishlist/WishlistButton';
 import '../styles/productDetail.css';
@@ -328,7 +329,16 @@ const ProductListPage: React.FC = () => {
                       
                       <div className="card-body d-flex flex-column">
                         <h5 className="card-title">{product.name}</h5>
-                        <p className="card-text text-muted small mb-2">
+                        <p className="card-text text-muted small mb-2 d-flex align-items-center gap-1">
+                          {resolveCategoryImage(product.category.image, product.category.display_image) ? (
+                            <img
+                              src={resolveCategoryImage(product.category.image, product.category.display_image)!}
+                              alt={product.category.name}
+                              style={{ width: '18px', height: '18px', objectFit: 'cover', borderRadius: '3px' }}
+                            />
+                          ) : (
+                            <i className="bi bi-tag" style={{ fontSize: '14px' }}></i>
+                          )}
                           {product.category.name}
                         </p>
                         <p className="card-text flex-grow-1">

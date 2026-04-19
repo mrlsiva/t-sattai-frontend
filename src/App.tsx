@@ -40,6 +40,8 @@ import UserDashboard from './pages/UserDashboard';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // Temporary placeholder component for missing pages
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -98,6 +100,8 @@ function App() {
                         <Route path="/cart" element={<CartPage />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/register" element={<RegisterPage />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                        <Route path="/reset-password" element={<ResetPasswordPage />} />
                         <Route path="/about" element={<AboutPage />} />
                         <Route path="/contact" element={<ContactPage />} />
                         <Route path="/faq" element={<FAQPage />} />

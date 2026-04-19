@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Row, Col, Card, Table, Button, Badge, Modal, Form, 
-  Pagination, InputGroup, Dropdown, Spinner, Alert 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Row, Col, Card, Table, Button, Badge, Modal, Form,
+  Pagination, InputGroup, Dropdown, Spinner, Alert, Image
 } from 'react-bootstrap';
 import { Product } from '../../types';
 import { productsApi } from '../../services/api';
@@ -29,6 +29,12 @@ const AdminProducts: React.FC = () => {
     is_active: true,
     is_featured: false,
   });
+
+  // Image state
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load additional products from localStorage
   const loadLocalProducts = () => {
@@ -282,6 +288,33 @@ const AdminProducts: React.FC = () => {
     loadProducts();
   };
 
+  const resetImageState = () => {
+    setImageFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setImageFiles(files);
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(previews);
+  };
+
+  const removeNewImage = (index: number) => {
+    const updatedFiles = imageFiles.filter((_, i) => i !== index);
+    const updatedPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImageFiles(updatedFiles);
+    setImagePreviews(updatedPreviews);
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAddProduct = () => {
     setEditingProduct(null);
     setFormData({
@@ -296,6 +329,7 @@ const AdminProducts: React.FC = () => {
       is_active: true,
       is_featured: false,
     });
+    resetImageState();
     setShowModal(true);
   };
 
@@ -313,20 +347,57 @@ const AdminProducts: React.FC = () => {
       is_active: product.is_active,
       is_featured: product.is_featured,
     });
+    resetImageState();
+    // Load existing images
+    const imgs = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+    setExistingImages(imgs);
     setShowModal(true);
+  };
+
+  const buildFormData = (includeExisting: boolean) => {
+    const data = new FormData();
+    // Append all text fields — booleans must be "1"/"0" for Laravel validation
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value === 'boolean') {
+        data.append(key, value ? '1' : '0');
+      } else {
+        data.append(key, String(value));
+      }
+    });
+    // Append new image files
+    imageFiles.forEach(file => data.append('images[]', file));
+    // Append existing image URLs to keep (only for updates)
+    if (includeExisting) {
+      existingImages.forEach(url => data.append('existing_images[]', url));
+    }
+    return data;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
+    // Use multipart when: new files selected, OR (editing and existing images were modified)
+    const existingImageCount = editingProduct
+      ? (Array.isArray(editingProduct.images) ? editingProduct.images.filter(Boolean).length : 0)
+      : 0;
+    const existingImagesChanged = editingProduct !== null && existingImages.length !== existingImageCount;
+    const useMultipart = imageFiles.length > 0 || existingImagesChanged;
+
+    // NOTE: Do NOT set Content-Type manually — Axios sets multipart/form-data
+    // with the correct boundary automatically when the payload is FormData.
+    const payload = useMultipart ? buildFormData(editingProduct !== null) : formData;
+
     try {
       console.log('AdminProducts: Submitting product to API:', formData);
-      
+
       if (editingProduct) {
         // Update existing product via API
         try {
-          const response = await api.put(`/admin/products/${editingProduct.id}`, formData);
+          // Laravel requires POST + _method=PUT for multipart file uploads
+          const response = useMultipart
+            ? await api.post(`/admin/products/${editingProduct.id}?_method=PUT`, payload)
+            : await api.put(`/admin/products/${editingProduct.id}`, payload);
           
           if (response.data?.success) {
             console.log('AdminProducts: Product updated successfully via API');
@@ -362,7 +433,7 @@ const AdminProducts: React.FC = () => {
       } else {
         // Create new product via API
         try {
-          const response = await api.post('/admin/products', formData);
+          const response = await api.post('/admin/products', payload);
           
           if (response.data?.success) {
             console.log('AdminProducts: Product created successfully via API:', response.data.data);
@@ -478,6 +549,35 @@ const AdminProducts: React.FC = () => {
         console.error('AdminProducts: Unexpected error during deletion:', error);
         setError(error.message || 'An unexpected error occurred while deleting the product');
       }
+    }
+  };
+
+  const handleToggleStatus = async (product: Product) => {
+    const newStatus = !product.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+
+    try {
+      try {
+        const response = await api.patch(`/admin/products/${product.id}/toggle-status`, { is_active: newStatus });
+        if (response.data?.success) {
+          setSuccess(`Product ${action}d successfully`);
+          loadProducts();
+          return;
+        }
+        throw new Error(response.data?.message || `Failed to ${action} product`);
+      } catch (apiError: any) {
+        if (apiError.response?.status === 403) {
+          setError('You do not have permission to perform this action.');
+          return;
+        }
+        // Fallback: update locally if API is unavailable
+        setProducts(prev =>
+          prev.map(p => p.id === product.id ? { ...p, is_active: newStatus } : p)
+        );
+        setSuccess(`Product ${action}d locally (API unavailable)`);
+      }
+    } catch (error: any) {
+      setError(error.message || `Failed to ${action} product`);
     }
   };
 
@@ -629,8 +729,24 @@ const AdminProducts: React.FC = () => {
                               <i className="bi bi-eye me-2"></i>
                               View
                             </Dropdown.Item>
+                            <Dropdown.Item
+                              className={product.is_active ? 'text-warning' : 'text-success'}
+                              onClick={() => handleToggleStatus(product)}
+                            >
+                              {product.is_active ? (
+                                <>
+                                  <i className="bi bi-pause-circle me-2"></i>
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <i className="bi bi-check-circle me-2"></i>
+                                  Activate
+                                </>
+                              )}
+                            </Dropdown.Item>
                             <Dropdown.Divider />
-                            <Dropdown.Item 
+                            <Dropdown.Item
                               className="text-danger"
                               onClick={() => handleDeleteProduct(product.id)}
                             >
@@ -801,6 +917,89 @@ const AdminProducts: React.FC = () => {
                 </Form.Group>
               </Col>
             </Row>
+
+            {/* Image Upload */}
+            <Form.Group className="mb-3">
+              <Form.Label>Product Images</Form.Label>
+
+              {/* Existing images (edit mode) */}
+              {existingImages.length > 0 && (
+                <div className="mb-2">
+                  <small className="text-muted d-block mb-1">Current images</small>
+                  <div className="d-flex flex-wrap gap-2">
+                    {existingImages.map((src, idx) => (
+                      <div key={idx} className="position-relative">
+                        <Image
+                          src={src}
+                          alt={`existing-${idx}`}
+                          width={80}
+                          height={80}
+                          style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(idx)}
+                          className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0"
+                          style={{ width: '20px', height: '20px', fontSize: '10px', lineHeight: 1, borderRadius: '50%', transform: 'translate(50%,-50%)' }}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New image previews */}
+              {imagePreviews.length > 0 && (
+                <div className="mb-2">
+                  <small className="text-muted d-block mb-1">New images to upload</small>
+                  <div className="d-flex flex-wrap gap-2">
+                    {imagePreviews.map((src, idx) => (
+                      <div key={idx} className="position-relative">
+                        <Image
+                          src={src}
+                          alt={`preview-${idx}`}
+                          width={80}
+                          height={80}
+                          style={{ objectFit: 'cover', borderRadius: '6px', border: '2px solid #0d6efd' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(idx)}
+                          className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0"
+                          style={{ width: '20px', height: '20px', fontSize: '10px', lineHeight: 1, borderRadius: '50%', transform: 'translate(50%,-50%)' }}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* File picker */}
+              <div
+                className="border border-2 border-dashed rounded p-3 text-center"
+                style={{ cursor: 'pointer', borderColor: '#0d6efd44' }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <i className="bi bi-cloud-upload fs-3 text-primary d-block mb-1"></i>
+                <small className="text-muted">
+                  Click to upload images (JPG, PNG, WebP) — multiple allowed
+                </small>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="d-none"
+                  onChange={handleImageChange}
+                />
+              </div>
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowModal(false)}>
