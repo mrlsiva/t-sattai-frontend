@@ -275,10 +275,14 @@ const HomePage: React.FC = () => {
                 <Col key={product.id} lg={3} md={4} sm={6} className="mb-4">
                   <Card className="h-100 shadow-sm product-card">
                     <div className="position-relative">
-                      <Card.Img 
-                        variant="top" 
-                        src={product.images[0] || '/placeholder-image.jpg'} 
+                      <Card.Img
+                        variant="top"
+                        src={product.images[0] || '/placeholder-image.svg'}
                         style={{ height: '200px', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/placeholder-image.svg';
+                        }}
                       />
                       {product.sale_price && (
                         <Badge 

@@ -1,11 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
+import { Product } from '../types';
 
 const WishlistPage: React.FC = () => {
   const { user } = useAuth();
+  const { addItem } = useCart();
   const { items: wishlist, removeItem, clearWishlist } = useWishlist();
+
+  const handleAddToCart = async (product: Product) => {
+    if (!user) {
+      alert('Please login to add items to cart');
+      return;
+    }
+    try {
+      await addItem(product, 1);
+      alert('Product added to cart!');
+    } catch (error: any) {
+      alert(error.message || 'Error adding product to cart');
+    }
+  };
 
   if (!user) {
     return (
@@ -51,10 +67,14 @@ const WishlistPage: React.FC = () => {
               <div className="card h-100">
                 <div className="position-relative">
                   <img
-                    src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder-image.svg'}
+                    src={product.images?.[0] || '/placeholder-image.svg'}
                     className="card-img-top"
                     alt={product.name}
                     style={{ height: '250px', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder-image.svg';
+                    }}
                   />
                   <button
                     className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
@@ -70,13 +90,28 @@ const WishlistPage: React.FC = () => {
                     {product.category?.name}
                   </p>
                   <p className="card-text flex-grow-1">
-                    {product.description}
+                    {product.description && product.description.length > 100
+                      ? `${product.description.substring(0, 100)}...`
+                      : product.description}
                   </p>
                   <div className="mt-auto">
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                      <span className="h5 mb-0 text-primary">
-                        ₹{product.price}
-                      </span>
+                      <div>
+                        {product.sale_price ? (
+                          <>
+                            <span className="h5 mb-0 text-danger me-2">
+                              ₹{product.sale_price}
+                            </span>
+                            <small className="text-muted text-decoration-line-through">
+                              ₹{product.price}
+                            </small>
+                          </>
+                        ) : (
+                          <span className="h5 mb-0 text-primary">
+                            ₹{product.price}
+                          </span>
+                        )}
+                      </div>
                       <small className="text-muted">
                         {product.stock > 0 ? (
                           <span className="text-success">
@@ -94,10 +129,19 @@ const WishlistPage: React.FC = () => {
                     <div className="d-grid gap-2">
                       <Link
                         to={`/products/${product.id}`}
-                        className="btn btn-primary"
+                        className="btn btn-outline-primary btn-sm"
                       >
                         View Details
                       </Link>
+                      {product.stock > 0 && (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleAddToCart(product)}
+                        >
+                          <i className="fas fa-shopping-cart me-1"></i>
+                          Add to Cart
+                        </button>
+                      )}
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => removeItem(product.id)}

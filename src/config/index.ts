@@ -49,8 +49,8 @@ export const config = {
 
     // Image Configuration
     images: {
-        placeholder: '/api/placeholder/400/400',
-        categoryPlaceholderBase: 'https://via.placeholder.com/200x200/4F46E5/FFFFFF?text=',
+        placeholder: '/placeholder-image.svg',
+        categoryPlaceholderBase: '/placeholder-image.svg',
     },
 };
 

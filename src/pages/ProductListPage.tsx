@@ -163,7 +163,7 @@ const ProductListPage: React.FC = () => {
         description: product.description,
         short_description: product.description.substring(0, 100),
         price: product.price.toString(),
-        sale_price: undefined,
+        sale_price: product.sale_price ? product.sale_price.toString() : undefined,
         sku: `SKU-${product.id}`,
         stock: product.stock,
         images: product.images,
@@ -296,10 +296,14 @@ const ProductListPage: React.FC = () => {
                     <div className="card h-100">
                       <div className="position-relative">
                         <img
-                          src={product.images[0] || '/placeholder-image.svg'}
+                          src={product.images?.[0] || '/placeholder-image.svg'}
                           className="card-img-top"
                           alt={product.name}
                           style={{ height: '250px', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/placeholder-image.svg';
+                          }}
                         />
                         <div className="position-absolute top-0 end-0 m-2">
                           <WishlistButton 
@@ -331,9 +335,22 @@ const ProductListPage: React.FC = () => {
                         
                         <div className="mt-auto">
                           <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="h5 mb-0 text-primary">
-                              ${product.price}
-                            </span>
+                            <div>
+                              {product.sale_price ? (
+                                <>
+                                  <span className="h5 mb-0 text-danger me-2">
+                                    ₹{product.sale_price}
+                                  </span>
+                                  <small className="text-muted text-decoration-line-through">
+                                    ₹{product.price}
+                                  </small>
+                                </>
+                              ) : (
+                                <span className="h5 mb-0 text-primary">
+                                  ₹{product.price}
+                                </span>
+                              )}
+                            </div>
                             <small className="text-muted">
                               {product.stock > 0 ? (
                                 <span className="text-success">

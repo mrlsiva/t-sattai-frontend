@@ -193,9 +193,8 @@ const ProductDetailPage: React.FC = () => {
   const displayStock = getProductValue(product, 'stock', 'stock_quantity', 'quantity') || 0;
   const displaySku = getProductValue(product, 'sku', 'code', 'product_code') || 'N/A';
   const displayCategory = getProductValue(product, 'category.name', 'category_name', 'category') || 'N/A';
-  const displayCategoryImage = getProductValue(product, 'category.image') || 
-    (displayCategory !== 'N/A' ? `${config.images.categoryPlaceholderBase}${displayCategory.charAt(0).toUpperCase()}` : null);
-  const displayImage = getProductValue(product, 'images.0', 'image', 'image_url', 'featured_image') || config.images.placeholder;
+  const displayCategoryImage = getProductValue(product, 'category.image') || null;
+  const displayImage = getProductValue(product, 'images.0', 'image', 'image_url', 'featured_image') || '/placeholder-image.svg';
   const displayName = getProductValue(product, 'name', 'title', 'product_name') || 'Product Name';
 
   // Debug logging for display values
@@ -258,11 +257,12 @@ const ProductDetailPage: React.FC = () => {
               onClick={() => navigate(`/products?category=${getProductValue(product, 'category.id') || ''}`)}
             >
               {displayCategoryImage && (
-                <img 
-                  src={displayCategoryImage} 
+                <img
+                  src={displayCategoryImage}
                   alt={displayCategory}
                   className="me-1"
                   style={{ width: '14px', height: '14px', objectFit: 'cover', borderRadius: '2px' }}
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }}
                 />
               )}
               {displayCategory}
@@ -282,10 +282,14 @@ const ProductDetailPage: React.FC = () => {
             <Card.Body className="p-0">
               <div className="position-relative">
                 <img
-                  src={product.images?.[selectedImageIndex] || product.images?.[0] || displayImage}
+                  src={product.images?.[selectedImageIndex] || product.images?.[0] || '/placeholder-image.svg'}
                   alt={product.name}
                   className="img-fluid w-100 rounded"
                   style={{ height: '500px', objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/placeholder-image.svg';
+                  }}
                 />
                 {product.sale_price && (
                   <Badge 
@@ -312,18 +316,22 @@ const ProductDetailPage: React.FC = () => {
                   {product.images.map((image, index) => (
                     <img
                       key={index}
-                      src={image}
+                      src={image || '/placeholder-image.svg'}
                       alt={`${product.name} ${index + 1}`}
                       className={`border rounded cursor-pointer ${
                         selectedImageIndex === index ? 'border-primary' : ''
                       }`}
-                      style={{ 
-                        width: '80px', 
-                        height: '80px', 
+                      style={{
+                        width: '80px',
+                        height: '80px',
                         objectFit: 'cover',
                         cursor: 'pointer'
                       }}
                       onClick={() => setSelectedImageIndex(index)}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/placeholder-image.svg';
+                      }}
                     />
                   ))}
                 </div>
@@ -497,11 +505,12 @@ const ProductDetailPage: React.FC = () => {
                     <strong>Category:</strong> 
                     <span className="ms-1">
                       {displayCategoryImage && (
-                        <img 
-                          src={displayCategoryImage} 
+                        <img
+                          src={displayCategoryImage}
                           alt={displayCategory}
                           className="me-1"
                           style={{ width: '16px', height: '16px', objectFit: 'cover', borderRadius: '2px' }}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }}
                         />
                       )}
                       {displayCategory}
@@ -637,11 +646,15 @@ const ProductDetailPage: React.FC = () => {
                   <div className="position-relative">
                     <Card.Img
                       variant="top"
-                      src={relatedProduct.images?.[0] || '/api/placeholder/300/200'}
+                      src={relatedProduct.images?.[0] || '/placeholder-image.svg'}
                       alt={relatedProduct.name}
                       style={{ height: '200px', objectFit: 'cover' }}
                       className="cursor-pointer"
                       onClick={() => navigate(`/products/${relatedProduct.id}`)}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/placeholder-image.svg';
+                      }}
                     />
                     {relatedProduct.sale_price && (
                       <Badge 
