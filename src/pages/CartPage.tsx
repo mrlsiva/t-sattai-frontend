@@ -45,10 +45,13 @@ const CartPage: React.FC = () => {
                         <Row className="align-items-center">
                           <Col md={2}>
                             <img
-                              src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/placeholder.png'}
+                              src={item.product.images?.[0] || '/placeholder-image.svg'}
                               alt={item.product.name}
                               className="img-fluid rounded"
-                              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/placeholder-image.svg';
+                              }}
                             />
                           </Col>
                           <Col md={4}>
@@ -75,7 +78,20 @@ const CartPage: React.FC = () => {
                             </div>
                           </Col>
                           <Col md={2}>
-                            <span className="fw-bold">₹{(parseFloat(item.product.sale_price || item.product.price) * item.quantity).toFixed(2)}</span>
+                            <div>
+                              {item.product.sale_price ? (
+                                <>
+                                  <div className="fw-bold text-danger">
+                                    ₹{(parseFloat(item.product.sale_price) * item.quantity).toFixed(2)}
+                                  </div>
+                                  <small className="text-muted text-decoration-line-through">
+                                    ₹{(parseFloat(item.product.price) * item.quantity).toFixed(2)}
+                                  </small>
+                                </>
+                              ) : (
+                                <span className="fw-bold">₹{(parseFloat(item.product.price) * item.quantity).toFixed(2)}</span>
+                              )}
+                            </div>
                           </Col>
                           <Col md={2}>
                             <Button
@@ -108,7 +124,7 @@ const CartPage: React.FC = () => {
                       </div>
                       <hr />
                       <div className="d-flex justify-content-between fw-bold">
-                        <span>Subtotal:</span>
+                        <span>Total:</span>
                         <span>₹{total.toFixed(2)}</span>
                       </div>
                       <Button 
