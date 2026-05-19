@@ -293,7 +293,7 @@ const ProductListPage: React.FC = () => {
               <div className="row">
                 {Array.isArray(products) && products.map((product) => (
                   <div key={product.id} className="col-md-6 col-lg-4 mb-4">
-                    <div className="card h-100">
+                    <div className="card">
                       <div className="position-relative">
                         <img
                           src={product.images?.[0] || '/placeholder-image.svg'}
