@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Table, Badge, ProgressBar } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Badge, ProgressBar } from 'react-bootstrap';
 
 interface SalesData {
   period: string;
@@ -54,10 +54,6 @@ const AdminAnalytics: React.FC = () => {
   };
 
   const stats = getOverallStats();
-
-  const getGrowthPercentage = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1);
-  };
 
   const renderMockChart = (type: string) => {
     return (
@@ -135,10 +131,10 @@ const AdminAnalytics: React.FC = () => {
             <Card.Body>
               <div className="d-flex align-items-center">
                 <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                  <i className="bi bi-currency-dollar text-primary fs-5"></i>
+                  <i className="bi bi-cash text-primary fs-5"></i>
                 </div>
                 <div>
-                  <h4 className="fw-bold mb-0">${stats.totalSales.toLocaleString()}</h4>
+                  <h4 className="fw-bold mb-0">₹{stats.totalSales.toLocaleString()}</h4>
                   <p className="text-muted mb-0 small">Total Revenue</p>
                   <Badge bg="success" className="small">+{stats.growthRate}%</Badge>
                 </div>

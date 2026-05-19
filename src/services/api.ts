@@ -52,6 +52,11 @@ api.interceptors.response.use(
 
 // Error handler utility
 export const handleApiError = (error: any): string => {
+    if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const messages = (Object.values(errors) as string[][]).flat();
+        return messages.join(' ');
+    }
     if (error.response?.data?.message) {
         return error.response.data.message;
     }
@@ -119,6 +124,29 @@ export const authApi = {
                 new_password: newPassword,
                 new_password_confirmation: newPassword
             });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    async forgotPassword(email: string): Promise<ApiResponse<null>> {
+        try {
+            const response = await api.post('/auth/forgot-password', { email });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    async resetPassword(data: {
+        token: string;
+        email: string;
+        password: string;
+        password_confirmation: string;
+    }): Promise<ApiResponse<null>> {
+        try {
+            const response = await api.post('/auth/reset-password', data);
             return response.data;
         } catch (error) {
             throw error;
@@ -280,6 +308,15 @@ export const ordersApi = {
         }
     },
 
+    async toggleProductStatus(productId: number, isActive: boolean): Promise<ApiResponse<any>> {
+        try {
+            const response = await api.patch(`/admin/products/${productId}/toggle-status`, { is_active: isActive });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     async getById(id: string): Promise<ApiResponse<Order>> {
         try {
             const response = await api.get(`/orders/${id}`);
@@ -415,11 +452,12 @@ export const paymentApi = {
         }
     },
 
-    async confirmPayment(paymentIntentId: string, shippingAddress: any): Promise<ApiResponse<any>> {
+    async confirmPayment(paymentIntentId: string, shippingAddress: any, cartItems?: any[]): Promise<ApiResponse<any>> {
         try {
             const response = await api.post('/payments/confirm', {
                 payment_intent_id: paymentIntentId,
-                shipping_address: shippingAddress
+                shipping_address: shippingAddress,
+                ...(cartItems && cartItems.length > 0 ? { cart_items: cartItems } : {}),
             });
             return response.data;
         } catch (error) {

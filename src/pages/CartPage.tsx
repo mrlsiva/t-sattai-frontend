@@ -5,7 +5,7 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const CartPage: React.FC = () => {
-  const { items, total, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, total, updateQuantity, removeItem } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -120,7 +120,7 @@ const CartPage: React.FC = () => {
                       </div>
                       <div className="d-flex justify-content-between mb-2">
                         <span>Shipping:</span>
-                        <span>FREE</span>
+                        <span className="text-muted">Calculated at checkout</span>
                       </div>
                       <hr />
                       <div className="d-flex justify-content-between fw-bold">

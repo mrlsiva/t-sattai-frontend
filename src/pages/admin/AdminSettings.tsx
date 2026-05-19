@@ -56,8 +56,8 @@ const AdminSettings: React.FC = () => {
     siteDescription: 'Your premier destination for quality products',
     contactEmail: 'support@ecomstore.com',
     supportPhone: '+1 (555) 123-4567',
-    currency: 'USD',
-    timezone: 'America/New_York',
+    currency: 'INR',
+    timezone: 'Asia/Kolkata',
     language: 'en'
   });
 
@@ -239,12 +239,13 @@ const AdminSettings: React.FC = () => {
                             <Form.Select
                               value={systemSettings.currency}
                               onChange={(e) => setSystemSettings({...systemSettings, currency: e.target.value})}
+                              disabled
                             >
-                              <option value="USD">USD - US Dollar</option>
-                              <option value="EUR">EUR - Euro</option>
-                              <option value="GBP">GBP - British Pound</option>
-                              <option value="CAD">CAD - Canadian Dollar</option>
+                              <option value="INR">INR - Indian Rupee (₹)</option>
                             </Form.Select>
+                            <Form.Text className="text-muted">
+                              Only INR is supported for this store
+                            </Form.Text>
                           </Form.Group>
                         </Col>
                         <Col md={4}>
@@ -253,13 +254,13 @@ const AdminSettings: React.FC = () => {
                             <Form.Select
                               value={systemSettings.timezone}
                               onChange={(e) => setSystemSettings({...systemSettings, timezone: e.target.value})}
+                              disabled
                             >
-                              <option value="America/New_York">Eastern Time</option>
-                              <option value="America/Chicago">Central Time</option>
-                              <option value="America/Denver">Mountain Time</option>
-                              <option value="America/Los_Angeles">Pacific Time</option>
-                              <option value="UTC">UTC</option>
+                              <option value="Asia/Kolkata">India Standard Time (IST)</option>
                             </Form.Select>
+                            <Form.Text className="text-muted">
+                              Only IST is supported for this store
+                            </Form.Text>
                           </Form.Group>
                         </Col>
                       </Row>

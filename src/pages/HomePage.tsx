@@ -3,9 +3,9 @@ import { Container, Row, Col, Carousel, Card, Button, Badge } from 'react-bootst
 import { Link, useNavigate } from 'react-router-dom';
 import { Product, Category } from '../types';
 import { productsApi, categoriesApi, handleApiError } from '../services/api';
+import { resolveCategoryImage } from '../utils/imageHelpers';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
-import config from '../config';
 
 const HomePage: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -35,30 +35,30 @@ const HomePage: React.FC = () => {
         // Categories failed but continue loading products
       }
       
-      // Load featured products with better error handling
+      // Load featured products with fallback to all products
       try {
         const productsResponse = await productsApi.getFeatured();
-        
-        if (productsResponse.success && productsResponse.data) {
-          setFeaturedProducts(Array.isArray(productsResponse.data) ? productsResponse.data : []);
+
+        if (productsResponse.success && productsResponse.data && Array.isArray(productsResponse.data) && productsResponse.data.length > 0) {
+          setFeaturedProducts(productsResponse.data);
         } else {
-          // Fallback to direct API call
-          try {
-            const directResponse = await fetch(`${config.api.baseURL}/products/featured`);
-            const directData = await directResponse.json();
-            
-            if (directData.success && directData.data) {
-              setFeaturedProducts(Array.isArray(directData.data) ? directData.data : []);
-            } else {
-              setFeaturedProducts([]);
-            }
-          } catch (directError) {
+          throw new Error('No featured products');
+        }
+      } catch (featuredError) {
+        // Fallback: load all products and use first 8 as featured
+        try {
+          const allProductsResponse = await productsApi.getAll();
+          if (allProductsResponse.success && allProductsResponse.data) {
+            const products = Array.isArray(allProductsResponse.data)
+              ? allProductsResponse.data
+              : (allProductsResponse.data as any).data || [];
+            setFeaturedProducts(products.slice(0, 8));
+          } else {
             setFeaturedProducts([]);
           }
+        } catch (allError) {
+          setFeaturedProducts([]);
         }
-      } catch (productsError) {
-        setError('Failed to load featured products');
-        setFeaturedProducts([]);
       }
     } catch (error) {
       setError(handleApiError(error));
@@ -223,20 +223,33 @@ const HomePage: React.FC = () => {
             <Row>
               {categories.slice(0, 6).map((category) => (
                 <Col key={category.id} lg={2} md={4} sm={6} className="mb-4">
-                  <Card 
-                    as={Link} 
+                  <Card
+                    as={Link}
                     to={`/products/category/${category.id}`}
-                    className="h-100 text-decoration-none border-0 shadow-sm category-card"
+                    className="h-100 text-decoration-none border-0 shadow-sm category-card overflow-hidden"
                     style={{ transition: 'transform 0.3s ease' }}
                   >
-                    <Card.Body className="text-center p-4">
-                      <div 
-                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
-                        style={{ width: '60px', height: '60px' }}
-                      >
-                        <i className="bi bi-grid text-primary fs-3"></i>
+                    {resolveCategoryImage(category.image, category.display_image) ? (
+                      <div style={{ height: '120px', overflow: 'hidden' }}>
+                        <img
+                          src={resolveCategoryImage(category.image, category.display_image)!}
+                          alt={category.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
                       </div>
-                      <Card.Title className="small fw-semibold text-dark">{category.name}</Card.Title>
+                    ) : (
+                      <div
+                        className="bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                        style={{ height: '120px' }}
+                      >
+                        <i className="bi bi-grid text-primary" style={{ fontSize: '2.5rem' }}></i>
+                      </div>
+                    )}
+                    <Card.Body className="text-center py-2 px-3">
+                      <Card.Title className="small fw-semibold text-dark mb-0">{category.name}</Card.Title>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -330,13 +343,13 @@ const HomePage: React.FC = () => {
                       <div className="mb-3">
                         {product.sale_price ? (
                           <>
-                            <span className="fw-bold text-primary">${product.sale_price}</span>
+                            <span className="fw-bold text-primary">₹{product.sale_price}</span>
                             <span className="text-muted text-decoration-line-through ms-2">
-                              ${product.price}
+                              ₹{product.price}
                             </span>
                           </>
                         ) : (
-                          <span className="fw-bold text-primary">${product.price}</span>
+                          <span className="fw-bold text-primary">₹{product.price}</span>
                         )}
                       </div>
                       

@@ -29,7 +29,9 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!user?.is_admin) {
+  const isAdmin = user?.is_admin || localStorage.getItem('user_is_admin') === '1';
+
+  if (!isAdmin) {
     // Redirect to home page if user is not an admin
     return <Navigate to="/" replace />;
   }

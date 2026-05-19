@@ -8,6 +8,7 @@ import config from '../config';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const isAdmin = user?.is_admin || localStorage.getItem('user_is_admin') === '1';
   const { itemCount } = useCart();
   const { items: wishlistItems } = useWishlist();
   const navigate = useNavigate();
@@ -130,6 +131,15 @@ const Navbar: React.FC = () => {
               )}
             </Nav.Link>
 
+            {/* Admin Panel shortcut */}
+            {isAuthenticated && isAdmin && (
+              <Nav.Link as={Link} to="/admin" className="me-2">
+                <span className="badge bg-warning text-dark">
+                  <i className="bi bi-shield-lock me-1"></i>Admin
+                </span>
+              </Nav.Link>
+            )}
+
             {/* User Menu */}
             {isAuthenticated ? (
               <Dropdown align="end">
@@ -139,18 +149,34 @@ const Navbar: React.FC = () => {
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
-                  <Dropdown.Item as={Link} to="/dashboard">
-                    <i className="bi bi-speedometer2 me-2"></i>
-                    Dashboard
-                  </Dropdown.Item>
-                  <Dropdown.Item as={Link} to="/dashboard/profile">
-                    <i className="bi bi-person me-2"></i>
-                    Profile
-                  </Dropdown.Item>
-                  <Dropdown.Item as={Link} to="/dashboard/orders">
-                    <i className="bi bi-bag me-2"></i>
-                    Orders
-                  </Dropdown.Item>
+                  {isAdmin ? (
+                    <>
+                      <Dropdown.Header>Admin</Dropdown.Header>
+                      <Dropdown.Item as={Link} to="/admin">
+                        <i className="bi bi-speedometer2 me-2"></i>
+                        Admin Dashboard
+                      </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/admin/profile">
+                        <i className="bi bi-person-gear me-2"></i>
+                        Admin Profile
+                      </Dropdown.Item>
+                    </>
+                  ) : (
+                    <>
+                      <Dropdown.Item as={Link} to="/dashboard">
+                        <i className="bi bi-speedometer2 me-2"></i>
+                        Dashboard
+                      </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/dashboard/profile">
+                        <i className="bi bi-person me-2"></i>
+                        Profile
+                      </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/dashboard/orders">
+                        <i className="bi bi-bag me-2"></i>
+                        Orders
+                      </Dropdown.Item>
+                    </>
+                  )}
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={handleLogout}>
                     <i className="bi bi-box-arrow-right me-2"></i>

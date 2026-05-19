@@ -14,7 +14,7 @@ interface OrderDetails {
 const OrderConfirmationPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ const OrderConfirmationPage: React.FC = () => {
   };
 
   const handleViewOrders = () => {
-    navigate('/user-dashboard');
+    navigate('/dashboard');
   };
 
   return (
@@ -115,7 +115,7 @@ const OrderConfirmationPage: React.FC = () => {
                         <h6 className="text-muted mb-2">Items Ordered:</h6>
                         {orderDetails.items.length > 0 ? (
                           orderDetails.items.map((item, index) => (
-                            <div className="d-flex justify-content-between align-items-center mb-2">
+                            <div key={index} className="d-flex justify-content-between align-items-center mb-2">
                               <span>{item.product?.name || 'Product'} (Qty: {item.quantity || 1})</span>
                               <span style={{ color: '#582c00', fontWeight: '500' }}>
                                 ₹{((item.product?.sale_price || item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}

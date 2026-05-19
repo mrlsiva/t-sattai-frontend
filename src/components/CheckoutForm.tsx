@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button, Spinner, Alert } from 'react-bootstrap';
 import { paymentApi } from '../services/api';
@@ -6,22 +6,35 @@ import { paymentApi } from '../services/api';
 interface CheckoutFormProps {
   clientSecret: string;
   shippingAddress: any;
+  cartItems: Array<{ product_id: number; quantity: number; price: number }>;
   onSuccess: (orderNumber: string) => void;
 }
 
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret, shippingAddress, onSuccess }) => {
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret, shippingAddress, cartItems, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
+
+  // Reset states when clientSecret changes (new payment intent)
+  useEffect(() => {
+    setPaymentProcessed(false);
+    setIsProcessing(false);
+    setError(null);
+    setLoading(false);
+  }, [clientSecret]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!stripe || !elements) {
+    // Prevent double submissions
+    if (!stripe || !elements || isProcessing || paymentProcessed) {
       return;
     }
 
+    setIsProcessing(true);
     setLoading(true);
     setError(null);
 
@@ -37,14 +50,24 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret, shippingAddre
       });
 
       if (stripeError) {
-        setError(stripeError.message || 'Payment failed');
+        // Check if error is due to payment already being confirmed
+        if (stripeError.code === 'payment_intent_unexpected_state') {
+          setError('This payment has already been processed. Please check your orders or contact support.');
+          setPaymentProcessed(true);
+        } else {
+          setError(stripeError.message || 'Payment failed');
+        }
         setLoading(false);
+        setIsProcessing(false);
         return;
       }
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Mark as processed to prevent re-submission
+        setPaymentProcessed(true);
+        
         // Confirm payment with our backend
-        const result = await paymentApi.confirmPayment(paymentIntent.id, shippingAddress);
+        const result = await paymentApi.confirmPayment(paymentIntent.id, shippingAddress, cartItems);
         
         if (result.success) {
           onSuccess(result.data.order_number);
@@ -53,7 +76,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret, shippingAddre
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      // Check for duplicate payment error
+      if (err.message?.includes('already succeeded') || err.message?.includes('already confirmed')) {
+        setError('This payment has already been processed. Please check your orders.');
+        setPaymentProcessed(true);
+      } else {
+        setError(err.message || 'An unexpected error occurred');
+      }
+      setIsProcessing(false);
     } finally {
       setLoading(false);
     }
@@ -76,13 +106,15 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret, shippingAddre
           type="submit"
           variant="primary"
           size="lg"
-          disabled={!stripe || loading}
+          disabled={!stripe || loading || isProcessing || paymentProcessed}
         >
           {loading ? (
             <>
               <Spinner animation="border" size="sm" className="me-2" />
               Processing Payment...
             </>
+          ) : paymentProcessed ? (
+            'Payment Completed'
           ) : (
             'Complete Payment'
           )}

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { AuthContextType, User, LoginData, RegisterData } from '../types';
+import { AuthContextType, User, RegisterData } from '../types';
 import { authApi, handleApiError } from '../services/api';
 
 interface AuthState {
@@ -93,10 +93,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const loadUser = async () => {
+    dispatch({ type: 'LOGIN_START' });
     try {
       const response = await authApi.getProfile();
       if (response.success && response.data) {
-        dispatch({ type: 'LOGIN_SUCCESS', payload: response.data });
+        const userData = response.data;
+        // Normalize is_admin — profile endpoint may return role or omit the field entirely.
+        // Fall back to the value cached in localStorage at login time.
+        if (!userData.is_admin) {
+          userData.is_admin =
+            (userData as any).role === 'admin' ||
+            localStorage.getItem('user_is_admin') === '1';
+        }
+        dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
       } else {
         localStorage.removeItem('auth_token');
         sessionStorage.removeItem('mock_user_data');
@@ -119,6 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.success && response.data) {
         localStorage.setItem('auth_token', response.data.token);
+        localStorage.setItem('user_is_admin', response.data.user.is_admin ? '1' : '0');
         console.log('✅ AuthContext: Login successful, user:', response.data.user);
         dispatch({ type: 'LOGIN_SUCCESS', payload: response.data.user });
       } else {
@@ -159,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_is_admin');
       dispatch({ type: 'LOGOUT' });
     }
   };
@@ -179,10 +190,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'LOGIN_ERROR', payload: errorMessage });
       throw new Error(errorMessage);
     }
-  };
-
-  const clearError = () => {
-    dispatch({ type: 'CLEAR_ERROR' });
   };
 
   const contextValue: AuthContextType = {

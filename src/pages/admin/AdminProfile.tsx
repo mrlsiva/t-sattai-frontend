@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Modal, Spinner } from 'react-bootstrap';
-import { useAuth } from '../../contexts/AuthContext';
 import { adminProfileApi } from '../../services/api';
 
 interface AdminProfileData {
@@ -36,7 +35,6 @@ interface PasswordChange {
 }
 
 const AdminProfile: React.FC = () => {
-  const { user } = useAuth();
   const [showAlert, setShowAlert] = useState<{type: 'success' | 'danger', message: string} | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(true);

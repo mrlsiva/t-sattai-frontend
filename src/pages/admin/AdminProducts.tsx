@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Row, Col, Card, Table, Button, Badge, Modal, Form,
-  Pagination, InputGroup, Dropdown, Spinner, Alert
+  Pagination, InputGroup, Dropdown, Spinner, Alert, Image
 } from 'react-bootstrap';
-import { Product, Category } from '../../types';
-import { productsApi, handleApiError } from '../../services/api';
+import { Product } from '../../types';
+import { productsApi } from '../../services/api';
 import api from '../../utils/api';
 
 const FALLBACK_CATEGORIES: Category[] = [
@@ -43,8 +43,14 @@ const AdminProducts: React.FC = () => {
     is_featured: false,
   });
 
-  // ─── localStorage helpers ────────────────────────────────────────────────
-  const loadLocalProducts = (): Product[] => {
+  // Image state
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load additional products from localStorage
+  const loadLocalProducts = () => {
     try {
       const raw = localStorage.getItem('adminProducts');
       return raw ? JSON.parse(raw) : [];
@@ -83,6 +89,7 @@ const AdminProducts: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const loadProducts = async () => {
@@ -191,32 +198,33 @@ const AdminProducts: React.FC = () => {
     setFormData(prev => ({ ...prev, image_url: '' })); // clear URL when file chosen
   };
 
-  const handleImageUrlChange = (url: string) => {
-    setFormData(prev => ({ ...prev, image_url: url }));
-    if (url) {
-      setImagePreview(url);
-      setImageFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview('');
-    setFormData(prev => ({ ...prev, image_url: '' }));
+  const resetImageState = () => {
+    setImageFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Converts a File to base64 data URL for local-storage fallback
-  const fileToDataUrl = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-  // ─── Modal open helpers ──────────────────────────────────────────────────
+    setImageFiles(files);
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(previews);
+  };
+
+  const removeNewImage = (index: number) => {
+    const updatedFiles = imageFiles.filter((_, i) => i !== index);
+    const updatedPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImageFiles(updatedFiles);
+    setImagePreviews(updatedPreviews);
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAddProduct = () => {
     setEditingProduct(null);
     setFormData({
@@ -225,9 +233,7 @@ const AdminProducts: React.FC = () => {
       category_id: '', image_url: '',
       is_active: true, is_featured: false,
     });
-    setImageFile(null);
-    setImagePreview('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    resetImageState();
     setShowModal(true);
   };
 
@@ -247,66 +253,57 @@ const AdminProducts: React.FC = () => {
       is_active: product.is_active,
       is_featured: product.is_featured,
     });
-    setImageFile(null);
-    setImagePreview(existingImage);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    resetImageState();
+    // Load existing images
+    const imgs = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+    setExistingImages(imgs);
     setShowModal(true);
   };
 
-  // ─── Submit ──────────────────────────────────────────────────────────────
+  const buildFormData = (includeExisting: boolean) => {
+    const data = new FormData();
+    // Append all text fields — booleans must be "1"/"0" for Laravel validation
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value === 'boolean') {
+        data.append(key, value ? '1' : '0');
+      } else {
+        data.append(key, String(value));
+      }
+    });
+    // Append new image files
+    imageFiles.forEach(file => data.append('images[]', file));
+    // Append existing image URLs to keep (only for updates)
+    if (includeExisting) {
+      existingImages.forEach(url => data.append('existing_images[]', url));
+    }
+    return data;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Determine the final images array to send / store locally
-    const resolveImages = async (): Promise<string[]> => {
-      if (imageFile) {
-        // Try sending the file via multipart; for local fallback use data URL
-        return [await fileToDataUrl(imageFile)];
-      }
-      if (formData.image_url.trim()) return [formData.image_url.trim()];
-      if (editingProduct) return editingProduct.images || ['/placeholder-image.svg'];
-      return ['/placeholder-image.svg'];
-    };
+    // Use multipart when: new files selected, OR (editing and existing images were modified)
+    const existingImageCount = editingProduct
+      ? (Array.isArray(editingProduct.images) ? editingProduct.images.filter(Boolean).length : 0)
+      : 0;
+    const existingImagesChanged = editingProduct !== null && existingImages.length !== existingImageCount;
+    const useMultipart = imageFiles.length > 0 || existingImagesChanged;
 
-    // Build multipart FormData for file uploads
-    const buildFormData = (images: string[]) => {
-      const fd = new FormData();
-      fd.append('name', formData.name);
-      fd.append('description', formData.description);
-      fd.append('short_description', formData.short_description);
-      fd.append('price', formData.price);
-      if (formData.sale_price) fd.append('sale_price', formData.sale_price);
-      fd.append('sku', formData.sku);
-      fd.append('stock', formData.stock);
-      fd.append('category_id', formData.category_id);
-      fd.append('is_active', formData.is_active ? '1' : '0');
-      fd.append('is_featured', formData.is_featured ? '1' : '0');
-      if (imageFile) {
-        fd.append('images[]', imageFile);
-      } else {
-        images.forEach(img => fd.append('images[]', img));
-      }
-      return fd;
-    };
+    // NOTE: Do NOT set Content-Type manually — Axios sets multipart/form-data
+    // with the correct boundary automatically when the payload is FormData.
+    const payload = useMultipart ? buildFormData(editingProduct !== null) : formData;
 
     try {
+      console.log('AdminProducts: Submitting product to API:', formData);
+
       if (editingProduct) {
         try {
-          let response;
-          if (imageFile) {
-            const fd = buildFormData([]);
-            fd.append('_method', 'PUT');
-            response = await api.post(`/admin/products/${editingProduct.id}`, fd, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
-          } else {
-            const payload: any = { ...formData };
-            if (formData.image_url.trim()) payload.images = [formData.image_url.trim()];
-            delete payload.image_url;
-            response = await api.put(`/admin/products/${editingProduct.id}`, payload);
-          }
-
+          // Laravel requires POST + _method=PUT for multipart file uploads
+          const response = useMultipart
+            ? await api.post(`/admin/products/${editingProduct.id}?_method=PUT`, payload)
+            : await api.put(`/admin/products/${editingProduct.id}`, payload);
+          
           if (response.data?.success) {
             setSuccess('Product updated successfully');
             setShowModal(false);
@@ -341,19 +338,8 @@ const AdminProducts: React.FC = () => {
         }
       } else {
         try {
-          let response;
-          if (imageFile) {
-            const fd = buildFormData([]);
-            response = await api.post('/admin/products', fd, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
-          } else {
-            const payload: any = { ...formData };
-            if (formData.image_url.trim()) payload.images = [formData.image_url.trim()];
-            delete payload.image_url;
-            response = await api.post('/admin/products', payload);
-          }
-
+          const response = await api.post('/admin/products', payload);
+          
           if (response.data?.success) {
             setSuccess('Product created successfully');
             setShowModal(false);
@@ -444,10 +430,33 @@ const AdminProducts: React.FC = () => {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    loadProducts();
+  const handleToggleStatus = async (product: Product) => {
+    const newStatus = !product.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+
+    try {
+      try {
+        const response = await api.patch(`/admin/products/${product.id}/toggle-status`, { is_active: newStatus });
+        if (response.data?.success) {
+          setSuccess(`Product ${action}d successfully`);
+          loadProducts();
+          return;
+        }
+        throw new Error(response.data?.message || `Failed to ${action} product`);
+      } catch (apiError: any) {
+        if (apiError.response?.status === 403) {
+          setError('You do not have permission to perform this action.');
+          return;
+        }
+        // Fallback: update locally if API is unavailable
+        setProducts(prev =>
+          prev.map(p => p.id === product.id ? { ...p, is_active: newStatus } : p)
+        );
+        setSuccess(`Product ${action}d locally (API unavailable)`);
+      }
+    } catch (error: any) {
+      setError(error.message || `Failed to ${action} product`);
+    }
   };
 
   const getStatusBadge = (product: Product) => {
@@ -566,15 +575,20 @@ const AdminProducts: React.FC = () => {
                       </td>
                       <td>{product.sku}</td>
                       <td>
-                        {product.sale_price ? (
-                          <>
-                            <span className="fw-bold">₹{product.sale_price}</span>
-                            <br />
-                            <small className="text-muted text-decoration-line-through">₹{product.price}</small>
-                          </>
-                        ) : (
-                          <span className="fw-bold">₹{product.price}</span>
-                        )}
+                        <div>
+                          {product.sale_price && (
+                            <>
+                              <span className="fw-bold">₹{product.sale_price}</span>
+                              <br />
+                              <small className="text-muted text-decoration-line-through">
+                                ₹{product.price}
+                              </small>
+                            </>
+                          )}
+                          {!product.sale_price && (
+                            <span className="fw-bold">₹{product.price}</span>
+                          )}
+                        </div>
                       </td>
                       <td>{product.stock}</td>
                       <td>{getStatusBadge(product)}</td>
@@ -590,9 +604,29 @@ const AdminProducts: React.FC = () => {
                             <Dropdown.Item href={`/products/${product.slug}`} target="_blank">
                               <i className="bi bi-eye me-2"></i>View
                             </Dropdown.Item>
+                            <Dropdown.Item
+                              className={product.is_active ? 'text-warning' : 'text-success'}
+                              onClick={() => handleToggleStatus(product)}
+                            >
+                              {product.is_active ? (
+                                <>
+                                  <i className="bi bi-pause-circle me-2"></i>
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <i className="bi bi-check-circle me-2"></i>
+                                  Activate
+                                </>
+                              )}
+                            </Dropdown.Item>
                             <Dropdown.Divider />
-                            <Dropdown.Item className="text-danger" onClick={() => handleDeleteProduct(product.id)}>
-                              <i className="bi bi-trash me-2"></i>Delete
+                            <Dropdown.Item
+                              className="text-danger"
+                              onClick={() => handleDeleteProduct(product.id)}
+                            >
+                              <i className="bi bi-trash me-2"></i>
+                              Delete
                             </Dropdown.Item>
                           </Dropdown.Menu>
                         </Dropdown>
@@ -815,6 +849,88 @@ const AdminProducts: React.FC = () => {
               </Col>
             </Row>
 
+            {/* Image Upload */}
+            <Form.Group className="mb-3">
+              <Form.Label>Product Images</Form.Label>
+
+              {/* Existing images (edit mode) */}
+              {existingImages.length > 0 && (
+                <div className="mb-2">
+                  <small className="text-muted d-block mb-1">Current images</small>
+                  <div className="d-flex flex-wrap gap-2">
+                    {existingImages.map((src, idx) => (
+                      <div key={idx} className="position-relative">
+                        <Image
+                          src={src}
+                          alt={`existing-${idx}`}
+                          width={80}
+                          height={80}
+                          style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(idx)}
+                          className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0"
+                          style={{ width: '20px', height: '20px', fontSize: '10px', lineHeight: 1, borderRadius: '50%', transform: 'translate(50%,-50%)' }}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New image previews */}
+              {imagePreviews.length > 0 && (
+                <div className="mb-2">
+                  <small className="text-muted d-block mb-1">New images to upload</small>
+                  <div className="d-flex flex-wrap gap-2">
+                    {imagePreviews.map((src, idx) => (
+                      <div key={idx} className="position-relative">
+                        <Image
+                          src={src}
+                          alt={`preview-${idx}`}
+                          width={80}
+                          height={80}
+                          style={{ objectFit: 'cover', borderRadius: '6px', border: '2px solid #0d6efd' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(idx)}
+                          className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0"
+                          style={{ width: '20px', height: '20px', fontSize: '10px', lineHeight: 1, borderRadius: '50%', transform: 'translate(50%,-50%)' }}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* File picker */}
+              <div
+                className="border border-2 border-dashed rounded p-3 text-center"
+                style={{ cursor: 'pointer', borderColor: '#0d6efd44' }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <i className="bi bi-cloud-upload fs-3 text-primary d-block mb-1"></i>
+                <small className="text-muted">
+                  Click to upload images (JPG, PNG, WebP) — multiple allowed
+                </small>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="d-none"
+                  onChange={handleImageChange}
+                />
+              </div>
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
