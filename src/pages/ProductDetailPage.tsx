@@ -7,6 +7,7 @@ import { useWishlist } from '../contexts/WishlistContext';
 import { Product } from '../types';
 import { productsApi } from '../services/api';
 import config from '../config';
+import { resolveProductImage } from '../utils/imageHelpers';
 import '../styles/productDetail.css';
 
 const ProductDetailPage: React.FC = () => {
@@ -435,7 +436,7 @@ const ProductDetailPage: React.FC = () => {
             <Card.Body className="p-0">
               <div className="position-relative bg-light">
                 <img
-                  src={product.images?.[selectedImageIndex] || product.images?.[0] || '/placeholder-image.svg'}
+                  src={resolveProductImage(product.images?.[selectedImageIndex] || product.images?.[0])}
                   alt={product.name}
                   className="img-fluid w-100 rounded"
                   style={{ height: '500px', objectFit: 'cover' }}
@@ -485,7 +486,7 @@ const ProductDetailPage: React.FC = () => {
                   {product.images.map((image, index) => (
                     <img
                       key={index}
-                      src={image || '/placeholder-image.svg'}
+                      src={resolveProductImage(image)}
                       alt={`${product.name} ${index + 1}`}
                       className={`border rounded cursor-pointer ${
                         selectedImageIndex === index ? 'border-primary' : ''
@@ -707,30 +708,14 @@ const ProductDetailPage: React.FC = () => {
                     <div className="mb-2">
                       <strong>Brand:</strong> {getProductValue(product, 'brand')}
                     </div>
-                  </Col>
-                  {getProductValue(product, 'brand') && (
-                    <Col xs={6}>
-                      <div className="d-flex align-items-center">
-                        <i className="fas fa-copyright text-info me-2"></i>
-                        <div>
-                          <small className="text-muted d-block">Brand</small>
-                          <strong>{getProductValue(product, 'brand')}</strong>
-                        </div>
-                      </div>
-                    </Col>
                   )}
                   {getProductValue(product, 'weight') && (
-                    <Col xs={6}>
-                      <div className="d-flex align-items-center">
-                        <i className="fas fa-weight-hanging text-warning me-2"></i>
-                        <div>
-                          <small className="text-muted d-block">Weight</small>
-                          <strong>{getProductValue(product, 'weight')}</strong>
-                        </div>
-                      </div>
-                    </Col>
+                    <div className="mb-2">
+                      <strong>Weight:</strong> {getProductValue(product, 'weight')}
+                    </div>
                   )}
-                </Row>
+                </Col>
+              </Row>
                 
                 {/* Tags */}
                 {product.tags && product.tags.length > 0 && (
@@ -753,8 +738,7 @@ const ProductDetailPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </Card.Body>
-            </Card>
+            </div>
           </div>
         </Col>
       </Row>

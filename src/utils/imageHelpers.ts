@@ -1,8 +1,11 @@
 import config from '../config';
 
-// Derive the storage base URL from the API base URL
-// e.g.  http://localhost:8000/api  →  http://localhost:8000/storage
-const storageBase = config.api.baseURL.replace(/\/api\/?$/, '/storage');
+// Derive the storage base URL from the API base URL as a fallback.
+// In dev, REACT_APP_STORAGE_URL should point to the XAMPP public storage path
+// e.g. http://localhost/vembarkarupatti/t-sattai-backend/public/storage
+const storageBase: string =
+  process.env.REACT_APP_STORAGE_URL ||
+  config.api.baseURL.replace(/\/api\/?$/, '/storage');
 
 /**
  * Resolve a category image to a displayable URL.
@@ -47,11 +50,33 @@ export function resolveCategoryImage(
 
 /**
  * Resolve a product image to a displayable URL.
- * Product images are stored as full URLs or relative paths.
+ *
+ * Handles three URL patterns the backend emits:
+ *   1. http://127.0.0.1:8000/localhost/storage/products/file  – artisan serve + leaked hostname in path
+ *   2. http://localhost/vembarkarupatti/.../public/storage/products/file – XAMPP full sub-path
+ *   3. https://backend.vembarkarupatti.in/storage/products/file – production, leave as-is
+ *
+ * For cases 1 & 2, the file path after /storage/ is extracted and rebuilt against storageBase.
  */
 export function resolveProductImage(src?: string): string {
   if (!src) return '/placeholder-image.svg';
-  if (src.startsWith('http')) return src;
+  if (src.startsWith('http')) {
+    try {
+      const url = new URL(src);
+      const pathname = url.hostname !== 'localhost' && url.pathname.startsWith('/localhost/')
+        ? url.pathname.slice('/localhost'.length)  // Case 1: strip the spurious /localhost prefix
+        : url.pathname;                             // Case 2 & 3: use pathname as-is
+
+      const storageIdx = pathname.indexOf('/storage/');
+      if (storageIdx >= 0) {
+        // Rebuild from the known accessible storage base
+        return `${storageBase}${pathname.slice(storageIdx + '/storage'.length)}`;
+      }
+    } catch {
+      // not a valid URL
+    }
+    return src;
+  }
   if (src.startsWith('/')) return `${storageBase}${src}`;
   return `${storageBase}/products/${src}`;
 }

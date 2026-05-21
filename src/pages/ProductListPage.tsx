@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { Product, Category } from '../types';
 import api from '../utils/api';
-import { resolveCategoryImage } from '../utils/imageHelpers';
+import { resolveCategoryImage, resolveProductImage } from '../utils/imageHelpers';
 import SearchFilters from '../components/Search/SearchFilters';
 import WishlistButton from '../components/Wishlist/WishlistButton';
 import '../styles/productDetail.css';
@@ -313,7 +313,7 @@ const ProductListPage: React.FC = () => {
                     <div className="card">
                       <div className="position-relative">
                         <img
-                          src={product.images?.[0] || '/placeholder-image.svg'}
+                          src={resolveProductImage(product.images?.[0])}
                           className="card-img-top"
                           alt={product.name}
                           style={{ height: '250px', objectFit: 'cover' }}

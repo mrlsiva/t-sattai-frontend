@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { Product } from '../types';
+import { resolveProductImage } from '../utils/imageHelpers';
 
 const WishlistPage: React.FC = () => {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ const WishlistPage: React.FC = () => {
               <div className="card h-100">
                 <div className="position-relative">
                   <img
-                    src={product.images?.[0] || '/placeholder-image.svg'}
+                    src={resolveProductImage(product.images?.[0])}
                     className="card-img-top"
                     alt={product.name}
                     style={{ height: '250px', objectFit: 'cover' }}

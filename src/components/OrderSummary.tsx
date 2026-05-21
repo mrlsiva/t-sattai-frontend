@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, ListGroup } from 'react-bootstrap';
 import { CartItem } from '../types';
+import { resolveProductImage } from '../utils/imageHelpers';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -22,7 +23,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ items, subtotal, tax, shipp
             <ListGroup.Item key={item.id} className="d-flex align-items-center">
               <div className="flex-shrink-0">
                 <img
-                  src={Array.isArray(item.product.images) ? item.product.images[0] : ''}
+                  src={resolveProductImage(Array.isArray(item.product.images) ? item.product.images[0] : undefined)}
                   alt={item.product.name}
                   className="rounded"
                   style={{ width: '50px', height: '50px', objectFit: 'cover' }}

@@ -3,9 +3,10 @@ import {
   Row, Col, Card, Table, Button, Badge, Modal, Form,
   Pagination, InputGroup, Dropdown, Spinner, Alert, Image
 } from 'react-bootstrap';
-import { Product } from '../../types';
+import { Product, Category } from '../../types';
 import { productsApi } from '../../services/api';
 import api from '../../utils/api';
+import { resolveProductImage } from '../../utils/imageHelpers';
 
 const FALLBACK_CATEGORIES: Category[] = [
   { id: 1, name: 'Electronics', slug: 'electronics', sort_order: 1, is_active: true, created_at: '', updated_at: '' },
@@ -24,9 +25,6 @@ const AdminProducts: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Image state (separate from formData since File is not JSON-serialisable)
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -47,7 +45,6 @@ const AdminProducts: React.FC = () => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load additional products from localStorage
   const loadLocalProducts = () => {
@@ -190,14 +187,6 @@ const AdminProducts: React.FC = () => {
   };
 
   // ─── Image helpers ───────────────────────────────────────────────────────
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-    setFormData(prev => ({ ...prev, image_url: '' })); // clear URL when file chosen
-  };
-
   const resetImageState = () => {
     setImageFiles([]);
     setImagePreviews([]);
@@ -223,6 +212,18 @@ const AdminProducts: React.FC = () => {
 
   const removeExistingImage = (index: number) => {
     setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    loadProducts();
+  };
+
+  const resolveImages = (): string[] => {
+    if (existingImages.length > 0) return existingImages;
+    if (formData.image_url) return [formData.image_url];
+    return ['/placeholder-image.svg'];
   };
 
   const handleAddProduct = () => {
@@ -313,7 +314,7 @@ const AdminProducts: React.FC = () => {
           throw new Error(response.data?.message || 'Failed to update product');
         } catch (apiErr: any) {
           // Local fallback
-          const images = await resolveImages();
+          const images = resolveImages();
           const updatedProducts = products.map(p =>
             p.id === editingProduct.id
               ? {
@@ -359,7 +360,7 @@ const AdminProducts: React.FC = () => {
           }
 
           // Local fallback
-          const images = await resolveImages();
+          const images = resolveImages();
           const categoryObj = categories.find(c => c.id.toString() === formData.category_id);
           const newProduct: Product = {
             id: Date.now(),
@@ -561,7 +562,7 @@ const AdminProducts: React.FC = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={product.images?.[0] || '/placeholder-image.svg'}
+                            src={resolveProductImage(product.images?.[0])}
                             alt={product.name}
                             className="rounded me-3"
                             style={{ width: '50px', height: '50px', objectFit: 'cover' }}
@@ -670,58 +671,6 @@ const AdminProducts: React.FC = () => {
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-
-            {/* ── Product Image ─────────────────────────────────────── */}
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-semibold">Product Image</Form.Label>
-
-              {/* Preview */}
-              {imagePreview && (
-                <div className="mb-2 position-relative d-inline-block">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="rounded border"
-                    style={{ width: '120px', height: '120px', objectFit: 'cover', display: 'block' }}
-                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-image.svg'; }}
-                  />
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="position-absolute top-0 end-0"
-                    style={{ padding: '0 4px', lineHeight: '1.2' }}
-                    onClick={clearImage}
-                    title="Remove image"
-                  >
-                    ×
-                  </Button>
-                </div>
-              )}
-
-              {/* File upload */}
-              <div className="mb-2">
-                <Form.Control
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleImageFileChange}
-                />
-                <Form.Text className="text-muted">
-                  Upload JPG, PNG, SVG, or WEBP (max 2 MB)
-                </Form.Text>
-              </div>
-
-              {/* URL fallback */}
-              <div>
-                <Form.Label className="small text-muted mb-1">Or paste an image URL:</Form.Label>
-                <Form.Control
-                  type="url"
-                  placeholder="https://example.com/product.jpg"
-                  value={formData.image_url}
-                  onChange={(e) => handleImageUrlChange(e.target.value)}
-                />
-              </div>
-            </Form.Group>
 
             {/* ── Basic info ───────────────────────────────────────── */}
             <Row>
@@ -861,11 +810,12 @@ const AdminProducts: React.FC = () => {
                     {existingImages.map((src, idx) => (
                       <div key={idx} className="position-relative">
                         <Image
-                          src={src}
+                          src={resolveProductImage(src)}
                           alt={`existing-${idx}`}
                           width={80}
                           height={80}
                           style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }}
+                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-image.svg'; }}
                         />
                         <button
                           type="button"

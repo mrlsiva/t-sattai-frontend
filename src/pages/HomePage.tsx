@@ -3,7 +3,7 @@ import { Container, Row, Col, Carousel, Card, Button, Badge } from 'react-bootst
 import { Link, useNavigate } from 'react-router-dom';
 import { Product, Category } from '../types';
 import { productsApi, categoriesApi, handleApiError } from '../services/api';
-import { resolveCategoryImage } from '../utils/imageHelpers';
+import { resolveCategoryImage, resolveProductImage } from '../utils/imageHelpers';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 
@@ -290,7 +290,7 @@ const HomePage: React.FC = () => {
                     <div className="position-relative">
                       <Card.Img
                         variant="top"
-                        src={product.images[0] || '/placeholder-image.svg'}
+                        src={resolveProductImage(product.images[0])}
                         style={{ height: '200px', objectFit: 'cover' }}
                         onError={(e) => {
                           e.currentTarget.onerror = null;

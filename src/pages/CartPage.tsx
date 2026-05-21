@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { resolveProductImage } from '../utils/imageHelpers';
 
 const CartPage: React.FC = () => {
   const { items, total, updateQuantity, removeItem } = useCart();
@@ -45,7 +46,7 @@ const CartPage: React.FC = () => {
                         <Row className="align-items-center">
                           <Col md={2}>
                             <img
-                              src={item.product.images?.[0] || '/placeholder-image.svg'}
+                              src={resolveProductImage(item.product.images?.[0])}
                               alt={item.product.name}
                               className="img-fluid rounded"
                               onError={(e) => {
