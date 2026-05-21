@@ -70,13 +70,13 @@ const FAQPage: React.FC = () => {
     {
       id: 10,
       question: "How can I contact customer support?",
-      answer: "You can reach our customer support team through:\n\n• Live chat (available 24/7)\n• Email: support@ecomstore.com\n• Phone: +1 (555) 123-4567\n• Contact form on our website\n\nOur average response time is under 2 hours.",
+      answer: "You can reach our customer support team through:\n\n• Live chat (available 24/7)\n• Email: support@vembarkaruppatti.com\n• Phone: +1 (555) 123-4567\n• Contact form on our website\n\nOur average response time is under 2 hours.",
       category: "support"
     },
     {
       id: 11,
       question: "Do you offer wholesale pricing?",
-      answer: "Yes, we offer wholesale pricing for bulk orders. Contact our sales team at wholesale@ecomstore.com with your requirements, and we'll provide a custom quote within 24 hours.",
+      answer: "Yes, we offer wholesale pricing for bulk orders. Contact our sales team at wholesale@vembarkaruppatti.com with your requirements, and we'll provide a custom quote within 24 hours.",
       category: "orders"
     },
     {

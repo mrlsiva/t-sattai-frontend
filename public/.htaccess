@@ -1,13 +1,10 @@
 Options -MultiViews
 RewriteEngine On
+RewriteBase /
 
-# Let existing files and directories be served directly (images, css, js, etc.)
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+# Serve existing files and directories directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 
-# Return 404 for missing static asset extensions instead of falling through to index.html
-RewriteRule \.(jpg|jpeg|png|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js|map)$ - [R=404,L]
-
-# All other routes go to index.html (React SPA routing)
-RewriteRule ^ index.html [QSA,L]
+# Everything else goes to index.html (React SPA)
+RewriteRule . /index.html [L]

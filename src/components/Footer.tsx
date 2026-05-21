@@ -265,7 +265,7 @@ const Footer: React.FC = () => {
           <Row className="align-items-center pt-3 border-top border-secondary">
             <Col md={8}>
               <small className="text-white">
-                © {new Date().getFullYear()} EcomStore. All rights reserved. 
+                © {new Date().getFullYear()} Vembar Karuppatti. All rights reserved. 
                 Made with <i className="fas fa-heart text-danger"></i> for our customers.
               </small>
             </Col>

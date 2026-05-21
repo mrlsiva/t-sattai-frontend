@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(ls -la public/)",
-      "Bash(dir public *)"
+      "Bash(dir public *)",
+      "Bash(npm start *)"
     ]
   }
 }

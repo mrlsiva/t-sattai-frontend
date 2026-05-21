@@ -103,7 +103,7 @@ const AdminSettings: React.FC = () => {
     smtpUsername: '',
     smtpPassword: '',
     smtpEncryption: 'tls',
-    fromEmail: 'noreply@ecomstore.com',
+    fromEmail: 'noreply@vembarkaruppatti.com',
     fromName: 'E-Commerce Store'
   });
 

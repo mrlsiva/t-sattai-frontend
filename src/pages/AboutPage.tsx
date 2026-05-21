@@ -9,7 +9,7 @@ const AboutPage: React.FC = () => {
         <Row className="mb-5">
           <Col>
             <div className="text-center">
-              <h1 className="display-4 fw-bold mb-4">About EcomStore</h1>
+              <h1 className="display-4 fw-bold mb-4">About Vembar Karuppatti</h1>
               <p className="lead text-muted">
                 Your trusted partner in online shopping since 2020
               </p>
@@ -22,7 +22,7 @@ const AboutPage: React.FC = () => {
           <Col lg={6}>
             <h2 className="h3 fw-bold mb-4">Our Story</h2>
             <p className="mb-4">
-              EcomStore was founded with a simple mission: to make quality products 
+              Vembar Karuppatti was founded with a simple mission: to make quality products 
               accessible to everyone, everywhere. What started as a small online retailer 
               has grown into a comprehensive e-commerce platform serving customers worldwide.
             </p>
@@ -125,7 +125,7 @@ const AboutPage: React.FC = () => {
           <Col className="text-center">
             <h3 className="fw-bold mb-4">Ready to Shop With Us?</h3>
             <p className="lead mb-4">
-              Join thousands of satisfied customers who trust EcomStore 
+              Join thousands of satisfied customers who trust Vembar Karuppatti 
               for their shopping needs.
             </p>
             <div className="d-flex justify-content-center gap-3">
