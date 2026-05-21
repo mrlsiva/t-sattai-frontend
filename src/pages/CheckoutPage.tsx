@@ -84,7 +84,7 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    loadSavedAddresses();
+    loadSavedAddresses(true); // auto-select default or first address on initial load
   }, [isAuthenticated, items.length, navigate]);
 
   // Calculate totals when address or shipping method changes
@@ -236,24 +236,27 @@ const CheckoutPage: React.FC = () => {
     }
   };
 
-  const loadSavedAddresses = async () => {
+  const loadSavedAddresses = async (autoSelectFirst = false) => {
     try {
       const response = await addressApi.getUserAddresses();
       if (response.success && response.data) {
         setSavedAddresses(response.data);
-        
-        // Auto-select default address if available
+
+        // Pick default address, or first address if autoSelectFirst and none selected yet
         const defaultAddress = response.data.find((addr: SavedAddress) => addr.is_default);
-        if (defaultAddress) {
-          setSelectedAddressId(defaultAddress.id);
+        const firstAddress = response.data[0];
+        const toSelect = defaultAddress || (autoSelectFirst ? firstAddress : null);
+
+        if (toSelect) {
+          setSelectedAddressId(toSelect.id);
           setShippingAddress({
-            name: defaultAddress.full_name,
-            line1: defaultAddress.address_line_1,
-            line2: defaultAddress.address_line_2 || '',
-            city: defaultAddress.city,
-            state: defaultAddress.state,
-            postal_code: defaultAddress.postal_code,
-            country: defaultAddress.country,
+            name: toSelect.full_name,
+            line1: toSelect.address_line_1,
+            line2: toSelect.address_line_2 || '',
+            city: toSelect.city,
+            state: toSelect.state,
+            postal_code: toSelect.postal_code,
+            country: toSelect.country,
           });
         }
       }
@@ -476,7 +479,7 @@ const CheckoutPage: React.FC = () => {
       }
       
       if (response.success) {
-        await loadSavedAddresses();
+        await loadSavedAddresses(!editingAddress); // auto-select first when adding new
         setShowAddAddressModal(false);
         setEditingAddress(null);
       } else {
@@ -601,6 +604,20 @@ const CheckoutPage: React.FC = () => {
                         </small>
                       </h5>
                     </div>
+
+                    {/* No addresses yet — prompt to add one */}
+                    {savedAddresses.length === 0 && (
+                      <div className="text-center py-4 border rounded" style={{ backgroundColor: '#fefefe' }}>
+                        <i className="fas fa-map-marker-alt fa-2x mb-3" style={{ color: '#582c00', opacity: 0.5 }}></i>
+                        <p className="text-muted mb-3">No saved addresses. Add a shipping address to continue.</p>
+                        <Button
+                          onClick={() => setShowAddAddressModal(true)}
+                          style={{ backgroundColor: '#582c00', borderColor: '#582c00', fontWeight: '600' }}
+                        >
+                          <i className="fas fa-plus me-2"></i>Add Shipping Address
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Saved Addresses Selection */}
                     {savedAddresses.length > 0 && (

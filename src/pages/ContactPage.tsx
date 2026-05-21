@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
+import { useSiteSettings, formatBusinessHours } from '../contexts/SettingsContext';
 
 const ContactPage: React.FC = () => {
+  const { settings } = useSiteSettings();
+  const bhLines = formatBusinessHours(settings.businessHoursSchedule);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -70,7 +73,11 @@ const ContactPage: React.FC = () => {
                   </div>
                   <div>
                     <h6 className="fw-bold mb-1">Address</h6>
-                    <p className="text-muted mb-0">123 Business Street<br />City, State 12345</p>
+                    <p className="text-muted mb-0">
+                      {settings.address_street}<br />
+                      {settings.address_city}, {settings.address_state} - {settings.address_pincode}<br />
+                      {settings.address_country}
+                    </p>
                   </div>
                 </div>
               </Card.Body>
@@ -84,7 +91,7 @@ const ContactPage: React.FC = () => {
                   </div>
                   <div>
                     <h6 className="fw-bold mb-1">Phone</h6>
-                    <p className="text-muted mb-0">+1 (555) 123-4567</p>
+                    <p className="text-muted mb-0">{settings.supportPhone}</p>
                   </div>
                 </div>
               </Card.Body>
@@ -98,12 +105,13 @@ const ContactPage: React.FC = () => {
                   </div>
                   <div>
                     <h6 className="fw-bold mb-1">Email</h6>
-                    <p className="text-muted mb-0">support@ecomstore.com</p>
+                    <p className="text-muted mb-0">{settings.contactEmail}</p>
                   </div>
                 </div>
               </Card.Body>
             </Card>
 
+            {settings.showBusinessHours && (
             <Card className="border-0 shadow-sm">
               <Card.Body className="p-4">
                 <div className="d-flex align-items-center mb-3">
@@ -113,13 +121,15 @@ const ContactPage: React.FC = () => {
                   <div>
                     <h6 className="fw-bold mb-1">Business Hours</h6>
                     <p className="text-muted mb-0">
-                      Mon - Fri: 9:00 AM - 6:00 PM<br />
-                      Sat - Sun: 10:00 AM - 4:00 PM
+                      {bhLines.map((line, i) => (
+                        <span key={i}>{line}{i < bhLines.length - 1 && <br />}</span>
+                      ))}
                     </p>
                   </div>
                 </div>
               </Card.Body>
             </Card>
+            )}
           </Col>
 
           {/* Contact Form */}

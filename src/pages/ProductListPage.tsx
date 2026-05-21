@@ -7,6 +7,7 @@ import api from '../utils/api';
 import { resolveCategoryImage, resolveProductImage } from '../utils/imageHelpers';
 import SearchFilters from '../components/Search/SearchFilters';
 import WishlistButton from '../components/Wishlist/WishlistButton';
+// @ts-ignore: Allow side-effect import of CSS when no typings are present
 import '../styles/productDetail.css';
 
 const ProductListPage: React.FC = () => {
@@ -323,8 +324,8 @@ const ProductListPage: React.FC = () => {
                           }}
                         />
                         <div className="position-absolute top-0 end-0 m-2">
-                          <WishlistButton 
-                            productId={product.id} 
+                          <WishlistButton
+                            product={product}
                             className="btn-sm"
                             showText={false}
                           />

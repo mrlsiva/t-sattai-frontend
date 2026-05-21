@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 
 // Import Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -60,8 +61,9 @@ function App() {
 
   return (
     <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
+      <SettingsProvider>
+        <CartProvider>
+          <WishlistProvider>
           <Router>
             <div className="App">
               <ScrollToTop />
@@ -185,8 +187,9 @@ function App() {
               )}
             </div>
           </Router>
-        </WishlistProvider>
-      </CartProvider>
+          </WishlistProvider>
+        </CartProvider>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

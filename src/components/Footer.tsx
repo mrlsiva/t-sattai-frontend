@@ -2,8 +2,11 @@ import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import config from '../config';
+import { useSiteSettings, formatBusinessHours } from '../contexts/SettingsContext';
 
 const Footer: React.FC = () => {
+  const { settings } = useSiteSettings();
+  const bhLines = formatBusinessHours(settings.businessHoursSchedule);
   return (
     <>
       <footer className="bg-dark text-light py-5 mt-5 text-start">
@@ -171,23 +174,29 @@ const Footer: React.FC = () => {
               <div className="d-flex align-items-start mb-3">
                 <i className="fas fa-map-marker-alt text-primary me-3 mt-1"></i>
                 <small className="text-white">
-                  123 Commerce Street<br/>
-                  New York, NY 10001<br/>
-                  India
+                  {settings.address_street}<br/>
+                  {settings.address_city}, {settings.address_state} - {settings.address_pincode}<br/>
+                  {settings.address_country}
                 </small>
               </div>
               <div className="d-flex align-items-center mb-2">
                 <i className="fas fa-phone text-primary me-3"></i>
-                <small className="text-white">+1 (555) 123-4567</small>
+                <small className="text-white">{settings.supportPhone}</small>
               </div>
               <div className="d-flex align-items-center mb-2">
                 <i className="fas fa-envelope text-primary me-3"></i>
-                <small className="text-white">support@ecomstore.com</small>
+                <small className="text-white">{settings.contactEmail}</small>
               </div>
-              <div className="d-flex align-items-center mb-3">
-                <i className="fas fa-clock text-primary me-3"></i>
-                <small className="text-white">Mon - Fri: 9:00 AM - 6:00 PM EST</small>
-              </div>
+              {settings.showBusinessHours && (
+                <div className="d-flex align-items-start mb-3">
+                  <i className="fas fa-clock text-primary me-3 mt-1"></i>
+                  <small className="text-white">
+                    {bhLines.map((line, i) => (
+                      <span key={i}>{line}{i < bhLines.length - 1 && <br />}</span>
+                    ))}
+                  </small>
+                </div>
+              )}
               
               {/* Newsletter */}
               <div className="mt-4">
